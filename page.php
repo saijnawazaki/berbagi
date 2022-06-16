@@ -419,6 +419,22 @@ elseif($page == 'invoice_add_edit')
         $result = $db->query($query);    
         $data_invoice = $result->fetchArray();
     }
+    
+    //load Res
+    $query = "
+        select
+            *
+        from
+            restaurant
+        order by
+            restaurant.restaurant_name ASC
+    ";
+    $result = $db->query($query);
+    $arr_data['list_book'] = array();
+    while($row = $result->fetchArray())
+    {
+        $arr_data['list_restaurant'][$row['restaurant_id']]['name'] = $row['restaurant_name'];    
+    }
 ?>
     <div class="container">
         <h1>
@@ -442,8 +458,19 @@ elseif($page == 'invoice_add_edit')
                         <label>Invoice Date</label>
                         <input type="date" name="invoice_date" value="<?=isset($data_invoice['invoice_date']) ? date('Y-m-d',$data_invoice['invoice_date']) : date('Y-m-d')?>">
                         <label>Restaurant</label>
-                        <select>
+                        <select onchange="getData({page:'getSelectRestaurantMenuByRestaurantID',restaurantID: this.value,targetSelect:document.getElementsByClassName('select__product')})">
                             <option value="0">-</option>
+                            <?php
+                            if(count($arr_data['list_restaurant']) > 0)
+                            {
+                                foreach($arr_data['list_restaurant'] as $restaurant_id => $val)
+                                {
+                                ?>
+                                    <option value="<?=$restaurant_id?>"><?=$val['name']?></option>
+                                <?php
+                                }
+                            }
+                            ?>
                         </select>
                         <label>Tax</label>
                         <input class="text-right" type="text" name="tax_amount" value="<?=isset($data_invoice['tax_amount']) ? $data['tax_amount'] : ''?>">
@@ -480,16 +507,35 @@ elseif($page == 'invoice_add_edit')
                                 <tr>
                                     <td><?=$x?></td>
                                     <td>
-                                        <select>
+                                        <?php
+                                            $js = '
+                                                if(this.value == 0)
+                                                {
+                                                    document.getElementById(\'input__'.$x.'__price\').value = \'\';
+                                                    document.getElementById(\'input__'.$x.'__qty\').value = \'\';
+                                                    document.getElementById(\'input__'.$x.'__total\').innerHTML = \'\';
+                                                }
+                                                else
+                                                {
+                                                    if(Number(document.getElementById(\'input__'.$x.'__price\').value) == 0)
+                                                    {
+                                                        document.getElementById(\'input__'.$x.'__price\').value = this.options[this.selectedIndex].getAttribute(\'data-price\');    
+                                                    }
+                                                }
+                                                    
+                                            ';
+                                        ?>
+                                        <select onchange="<?=$js?>" class="select__product" name="product_list[<?=$x?>][product_id]" id="input__<?=$x?>__product_id">
                                             <option value="0">-</option>
                                         </select>
                                     </td>
                                     <td>
-                                        <input class="text-right" type="text">
+                                        <input class="text-right" type="text" name="product_list[<?=$x?>][qty]" id="input__<?=$x?>__qty">
                                     </td>
                                     <td>
-                                        <input class="text-right" type="text">
+                                        <input class="text-right" type="text" name="product_list[<?=$x?>][price]" id="input__<?=$x?>__price">
                                     </td>
+                                        <span id="input__<?=$x?>__total"></span>
                                     <td>
                                         
                                     </td>
@@ -764,22 +810,27 @@ elseif($page == 'restaurant_menu_add_edit')
         
         $query = "
             select
-                restaurant_menu_tag.rmt_id,
-                restaurant_menu_tag.rmt_name
+                tag.tag_id,
+                tag.tag_name
             from
-                restaurant_menu_tag_assign
-            inner join
                 restaurant_menu_tag
-                on restaurant_menu_tag.rmt_id = restaurant_menu_tag_assign.rmt_id  
+            inner join
+                tag
+                on tag.tag_id = restaurant_menu_tag.tag_id  
             where
-                restaurant_menu_tag_assign.rm_id = '".$g_rm_id."'
+                restaurant_menu_tag.rm_id = '".$g_rm_id."'
             order by
-                restaurant_menu_tag.rmt_name
+                tag.tag_name
         ";
         $result = $db->query($query) or die('ERROR!|WQUIEHQWUIEHUQWE');
+        $rm_tag = '';
         while($row = $result->fetchArray())
         {
-            $rm_tag .= $row['rmt_name'].';';     
+            if($rm_tag != '')
+            {
+                $rm_tag .= ',';
+            }
+            $rm_tag .= $row['tag_name'];     
         }
     }
 ?>
@@ -803,14 +854,139 @@ elseif($page == 'restaurant_menu_add_edit')
         <hr>
         <div class="row">
             <div class="col-12 col-lg-4">
-                <form method="post" action="<?=APP_URL?>?page=restaurant_add_edit&restaurant_id=<?=$g_restaurant_id?>" accept-charset="utf-8">
+                <form method="post" action="<?=APP_URL?>?page=restaurant_menu_add_edit" accept-charset="utf-8">
                     <label>Restaurant Menu Name</label>
                     <input type="text" name="rm_name" value="<?=isset($data_menu['rm_name']) ? $data_menu['rm_name'] : ''?>">
                     <label>Restaurant Menu Category Tag</label>
+                    <br><small class="color-muted">Spare with ",", for now</small>
                     <input type="text" name="rm_tag" value="<?=$rm_tag?>">
                     <hr>
                     <input type="hidden" name="restaurant_id" value="<?=$g_restaurant_id?>">
                     <input type="hidden" name="rm_id" value="<?=$g_rm_id?>">
+                    <input type="submit" name="submit" class="bg-primary color-white" value="Submit">
+                </form>   
+            </div>
+            
+        </div>
+    </div>
+<?php    
+}
+elseif($page == 'person')
+{
+    $arr_data['list'] = array();
+    $query = "
+        select
+            *
+        from
+            person
+        order by
+            created_at DESC
+    ";
+    //echo "<pre>$query</pre>";
+    $result = $db->query($query) or die('ERROR|WQIEHQUIWEHUIQWHEUQWE');    
+    
+    while($row = $result->fetchArray())
+    {
+        $arr_data['list'][$row['person_id']]['name'] = $row['person_name'];    
+        $arr_data['list'][$row['person_id']]['initial_name'] = $row['initial_name'];    
+    }
+?>
+    <div class="container">
+        <h1>
+            <a href="<?=APP_URL.'?page=home'?>">
+                <svg id="i-chevron-left" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentcolor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2">
+                    <path d="M20 30 L8 16 20 2" />
+                </svg>
+            
+                Person
+            </a>
+        </h1>
+        <hr>
+        <div class="text-right">
+            <a href="<?=APP_URL.'?page=person_add_edit&person_id=0'?>" class="button bg-success color-white">New</a>
+        </div>
+        <div class="row">
+            <?php
+                if(count($arr_data['list']) == 0)
+                {
+                ?>
+                    <div class="col-12 text-center">
+                        No Data
+                    </div>
+                <?php
+                }
+                else
+                {
+                    foreach($arr_data['list'] as $id => $val)
+                    {
+                    ?>
+                        <div class="col-6 col-lg-2 text-center mb-3">
+                            <div class="bg-light br-2" style="height: 200px;">
+                                
+                            </div>
+                            <?=$val['name']?>
+                            <div>
+                                <small>
+                                    <a href="<?=APP_URL.'?page=person_add_edit&rm_id='.$id?>">Edit</a>
+                                </small>
+                            </div>
+                        </div>
+                    <?php    
+                    }
+                    
+                }
+            ?>
+            
+            
+        </div>
+    </div>
+<?php    
+}
+elseif($page == 'person_add_edit')
+{
+    $g_id = isset($_GET['person_id']) ? $_GET['person_id'] : 0;
+    if(! preg_match('/^[0-9]*$/', $g_id)) 
+    {
+        die('ID Invalid');        
+    }
+    
+    if($g_id > 0)
+    {
+        $query = "
+            select
+                *
+            from
+                person
+            where
+                person_id = '".$g_id."'
+        ";
+        $result = $db->query($query);    
+        $data = $result->fetchArray();
+    }
+?>
+    <div class="container">
+        <h1>
+            <a href="<?=APP_URL.'?page=person'?>">
+                <svg id="i-chevron-left" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentcolor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2">
+                    <path d="M20 30 L8 16 20 2" />
+                </svg>
+                Person
+            </a>
+            <svg id="i-chevron-right" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentcolor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2">
+                <path d="M12 30 L24 16 12 2" />
+            </svg>
+            Add / Edit
+        </h1>
+        <hr>
+        <div class="row">
+            <div class="col-12 col-lg-4">
+                <form method="post" action="<?=APP_URL?>?page=person_add_edit" accept-charset="utf-8">
+                    <label>Full Name</label>
+                    <input type="text" name="person_name" value="<?=isset($data['person_name']) ? $data['person_name'] : ''?>">
+                    <label>Initial Name</label>
+                    <input type="text" name="initial_name" value="<?=isset($data['initial_name']) ? $data['initial_name'] : ''?>">
+                    <hr>
+                    <input type="hidden" name="person_id" value="<?=$g_id?>">
                     <input type="submit" name="submit" class="bg-primary color-white" value="Submit">
                 </form>   
             </div>

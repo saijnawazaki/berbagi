@@ -53,5 +53,88 @@ defined('APP_PATH') OR exit('No direct script access allowed');
             <small>2022 saijnawazaki. Version: <?=APP_VERSION?> / Designed with Mafura</small>
         </div> 
     </footer>
+    <script>
+        function createRequestObject()
+        {
+            var ro;
+            var browser = navigator.appName;
+            if(browser == 'Microsoft Internet Explorer'){
+                ro = new ActiveXObject('Microsoft.XMLHTTP');
+            }else{
+                ro = new XMLHttpRequest();
+            }
+            return ro;
+        }
+        
+        var xmlhttp = createRequestObject();
+        var url = '<?=APP_URL?>';
+        
+        function getData(setting)
+        {
+            let mess = '';
+            if(setting.page == undefined)
+            {
+                mess += "Page Invalid\n";         
+            }    
+            else
+            {
+                if(setting.page == 'getSelectRestaurantMenuByRestaurantID')
+                {
+                    xmlhttp.open('get', url+'?page='+setting.page+'&restaurant_id='+setting.restaurantID, true);
+                    xmlhttp.onreadystatechange = function()
+                    {
+                        if((xmlhttp.readyState == 4) && (xmlhttp.status == 200))
+                        {
+                            let res = JSON.parse(xmlhttp.responseText);
+                            
+                            setting.targetSelect[0].innerHTML = '<option value="0" data-price="">-</option>';
+                            
+                            if(res.status == 'ok')
+                            {
+                                if(res.data.length > 0)
+                                {
+                                    for(let x = 0; x < res.data.length; x++)
+                                    {
+                                        setting.targetSelect[0].innerHTML += '<option value="'+res.data[x].id+'" data-price="'+res.data[x].last_price+'">'+res.data[x].name+'</option>';    
+                                    }
+                                }    
+                            }
+                            else
+                            {
+                                mess += "ERROR: "+res.status_mess+"\n";    
+                            }
+                            
+                            //one for all
+                            let master = setting.targetSelect[0].innerHTML;
+                            for(let x = 0; x < setting.targetSelect.length; x++)
+                            {
+                                setting.targetSelect[x].innerHTML = master;
+                                
+                                //price qty total empty
+                                let id = setting.targetSelect[x].id;
+                                let exp_id = id.split('__');
+                                
+                                document.getElementById('input__'+x+'__qty').value = '';     
+                                document.getElementById('input__'+x+'__price').value = '';     
+                                document.getElementById('input__'+x+'__total').innerHTML = '';     
+                            }
+                            
+                        }
+                        return false;
+                    }
+                    xmlhttp.send(null);     
+                }
+                else
+                {
+                    mess += "Page Invalid - Not Defined\n";    
+                }   
+            }
+            
+            if(mess != '')
+            {
+                console.log(mess);
+            }
+        }
+    </script>
   </body>
 </html>
