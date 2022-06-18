@@ -1,13 +1,5 @@
 <?php
-//Init
-define('ASSETS_PATH', 'assets/');
-define('DB_PATH', ASSETS_PATH.'berbagi.db');
-define('APP_TITLE', 'Berbagi');
-define('APP_VERSION', '1.1 Beta');
-define('APP_URL', 'http://localhost/berbagi/');
-define('APP_PATH', dirname(__FILE__));
-
-date_default_timezone_set('Asia/Jakarta');
+require 'config.php';
 
 session_start();
 

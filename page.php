@@ -26,7 +26,7 @@ elseif($page == 'login')
                     </div>
                 </div>
                 <div class="col-12 col-lg-9">
-                    <img src="<?=ASSETS_PATH?>anjing.jpg" style="width: 210px;" class="mt-2">
+                    <img src="<?=APP_URL?>/assets/anjing.jpg" style="width: 210px;" class="mt-2">
                 </div>
             </div>
         </form>
@@ -42,21 +42,21 @@ elseif($page == 'home')
         <div class="row">
             <div class="col-6 col-lg-3">
                 <a href="<?=APP_URL.'?page=book'?>">
-                    <div class="bg-light p-3 br-2">
+                    <div class="bg-light p-3 br-2 mb-3">
                         <h1>Book</h1>
                     </div>
                 </a>
             </div>
             <div class="col-6 col-lg-3">
                 <a href="<?=APP_URL.'?page=restaurant'?>">
-                    <div class="bg-light p-3 br-2">
+                    <div class="bg-light p-3 br-2 mb-3">
                         <h1>Restaurant</h1>
                     </div>
                 </a>
             </div>
             <div class="col-6 col-lg-3">
                 <a href="<?=APP_URL.'?page=person'?>">
-                    <div class="bg-light p-3 br-2">
+                    <div class="bg-light p-3 br-2 mb-3">
                         <h1>Person</h1>
                     </div>
                 </a>
@@ -927,7 +927,7 @@ elseif($page == 'person')
                             <?=$val['name']?>
                             <div>
                                 <small>
-                                    <a href="<?=APP_URL.'?page=person_add_edit&rm_id='.$id?>">Edit</a>
+                                    <a href="<?=APP_URL.'?page=person_add_edit&person_id='.$id?>">Edit</a>
                                 </small>
                             </div>
                         </div>

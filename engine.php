@@ -523,7 +523,7 @@ elseif($_SERVER['REQUEST_METHOD'] === 'GET')
         
     }
     
-    if($_SESSION['ses_user_id'] > 0)
+    if(isset($_SESSION['ses_user_id']) && $_SESSION['ses_user_id'] > 0)
     {
         if($page == 'getSelectRestaurantMenuByRestaurantID')
         {   
