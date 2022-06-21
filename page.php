@@ -435,6 +435,22 @@ elseif($page == 'invoice_add_edit')
     {
         $arr_data['list_restaurant'][$row['restaurant_id']]['name'] = $row['restaurant_name'];    
     }
+
+    //load Platform
+    $query = "
+        select
+            *
+        from
+            platform
+        order by
+            platform.platform_name ASC
+    ";
+    $result = $db->query($query);
+    $arr_data['list_platform'] = array();
+    while($row = $result->fetchArray())
+    {
+        $arr_data['list_platform'][$row['platform_id']]['name'] = $row['platform_name'];    
+    }
 ?>
     <div class="container">
         <h1>
@@ -458,15 +474,39 @@ elseif($page == 'invoice_add_edit')
                         <label>Invoice Date</label>
                         <input type="date" name="invoice_date" value="<?=isset($data_invoice['invoice_date']) ? date('Y-m-d',$data_invoice['invoice_date']) : date('Y-m-d')?>">
                         <label>Restaurant</label>
-                        <select onchange="getData({page:'getSelectRestaurantMenuByRestaurantID',restaurantID: this.value,targetSelect:document.getElementsByClassName('select__product')})">
+                        <div class="row">
+                            <div class="col-8">
+                                <select id="restaurant_id" name="restaurant_id" onchange="getData({page:'getSelectRestaurantMenuByRestaurantID',restaurantID: this.value,targetSelect:document.getElementsByClassName('select__product')})">
+                                    <option value="0">-</option>
+                                    <?php
+                                    if(count($arr_data['list_restaurant']) > 0)
+                                    {
+                                        foreach($arr_data['list_restaurant'] as $restaurant_id => $val)
+                                        {
+                                        ?>
+                                            <option value="<?=$restaurant_id?>"><?=$val['name']?></option>
+                                        <?php
+                                        }
+                                    }
+                                    ?>
+                                </select>
+                            </div>
+                            <div class="col-4 text-right">
+                                <button type="button" onchange="getData({page:'getSelectRestaurantMenuByRestaurantID',restaurantID: document.getElementById('restaurant_id').value,targetSelect:document.getElementsByClassName('select__product')})">Refresh</button>
+                                <button type="button" onclick="window.open('<?=APP_URL?>?page=restaurant_menu&restaurant_id='+document.getElementById('restaurant_id').value, '_blank')">Menu</button>
+                            </div>
+                        </div>
+                                
+                        <label>Platform</label>
+                        <select name="platform_id">
                             <option value="0">-</option>
                             <?php
-                            if(count($arr_data['list_restaurant']) > 0)
+                            if(count($arr_data['list_platform']) > 0)
                             {
-                                foreach($arr_data['list_restaurant'] as $restaurant_id => $val)
+                                foreach($arr_data['list_platform'] as $platform_id => $val)
                                 {
                                 ?>
-                                    <option value="<?=$restaurant_id?>"><?=$val['name']?></option>
+                                    <option value="<?=$platform_id?>"><?=$val['name']?></option>
                                 <?php
                                 }
                             }
@@ -478,15 +518,12 @@ elseif($page == 'invoice_add_edit')
                         <input class="text-right" type="text" name="discount_amount" value="<?=isset($data_invoice['discount_amount']) ? $data['discount_amount'] : ''?>">
                         <label>Delivery</label>
                         <input class="text-right" type="text" name="delivery_amount" value="<?=isset($data_invoice['delivery_amount']) ? $data['delivery_amount'] : ''?>">
-                        <label>Adjustment</label>
-                        <input class="text-right" type="text" name="adjustment_amount" value="<?=isset($data_invoice['adjustment_amount']) ? $data['adjustment_amount'] : ''?>">
+                        
                         <label>Other</label>
                         <input class="text-right" type="text" name="other_amount" value="<?=isset($data_invoice['other_amount']) ? $data['other_amount'] : ''?>">
+                        <label>Adjustment</label>
+                        <input class="text-right" type="text" name="adjustment_amount" value="<?=isset($data_invoice['adjustment_amount']) ? $data['adjustment_amount'] : ''?>">
                         
-                        <hr>
-                        <input type="hidden" name="book_id" value="<?=$g_book_id?>">
-                        <input type="hidden" name="invoice_id" value="<?=$g_invoice_id?>">
-                        <input type="submit" name="submit" class="bg-primary color-white" value="Submit">
                        
                     </div>
                     <div class="col-12 col-lg-8">
@@ -494,11 +531,19 @@ elseif($page == 'invoice_add_edit')
                         <hr>
                         <table>
                             <tr>
-                                <th>No</th>
-                                <th>Product</th>
+                                <th rowspan="2">No</th>
+                                <th rowspan="2">Product</th>
                                 <th>Qty</th>
-                                <th>Price</th>
+                                <th rowspan="2">Price</th>
                                 <th>Total</th>
+                            </tr>
+                            <tr>
+                                <th>
+                                    <span id="info__tot__qty"></span>
+                                </th>
+                                <th>
+                                    <span id="info__tot__total"></span>
+                                </th>
                             </tr>
                             <?php
                             for($x = 1; $x <= 10; $x++)
@@ -508,6 +553,27 @@ elseif($page == 'invoice_add_edit')
                                     <td><?=$x?></td>
                                     <td>
                                         <?php
+                                            $js_tot = '
+                                                let data_list = document.getElementsByClassName(\'select__product\');
+                                                let tot_qty = 0;
+                                                let tot_total = 0;
+                                                for(let x = 0; x < data_list.length; x++)
+                                                {
+                                                    let id = data_list[x].id;
+                                                    let exp_id = id.split(\'__\');
+                                                    tot_qty += Number(document.getElementById(\'input__\'+exp_id[1]+\'__qty\').value);
+                                                    tot_total += Number(document.getElementById(\'input__\'+exp_id[1]+\'__totalhid\').value);
+                                                }
+
+                                                document.getElementById(\'info__tot__qty\').innerHTML = tot_qty;
+                                                document.getElementById(\'info__tot__total\').innerHTML = tot_total;
+                                            ';
+                                            $js_calc = '
+                                                let res = Number(document.getElementById(\'input__'.$x.'__price\').value) * Number(document.getElementById(\'input__'.$x.'__qty\').value);
+                                                document.getElementById(\'input__'.$x.'__total\').innerHTML = res;
+                                                document.getElementById(\'input__'.$x.'__totalhid\').value = res;
+                                                '.$js_tot.'
+                                            ';
                                             $js = '
                                                 if(this.value == 0)
                                                 {
@@ -522,7 +588,7 @@ elseif($page == 'invoice_add_edit')
                                                         document.getElementById(\'input__'.$x.'__price\').value = this.options[this.selectedIndex].getAttribute(\'data-price\');    
                                                     }
                                                 }
-                                                    
+                                                '.$js_calc.'    
                                             ';
                                         ?>
                                         <select onchange="<?=$js?>" class="select__product" name="product_list[<?=$x?>][product_id]" id="input__<?=$x?>__product_id">
@@ -530,20 +596,27 @@ elseif($page == 'invoice_add_edit')
                                         </select>
                                     </td>
                                     <td>
-                                        <input class="text-right" type="text" name="product_list[<?=$x?>][qty]" id="input__<?=$x?>__qty">
+                                        <input onkeyup="<?=$js_calc?>" class="text-right" type="text" name="product_list[<?=$x?>][qty]" id="input__<?=$x?>__qty">
                                     </td>
                                     <td>
-                                        <input class="text-right" type="text" name="product_list[<?=$x?>][price]" id="input__<?=$x?>__price">
+                                        <input onkeyup="<?=$js_calc?>" class="text-right" type="text" name="product_list[<?=$x?>][price]" id="input__<?=$x?>__price">
                                     </td>
-                                        <span id="input__<?=$x?>__total"></span>
-                                    <td>
                                         
+                                    <td>
+                                        <span id="input__<?=$x?>__total"></span>
+                                        <input type="hidden" id="input__<?=$x?>__totalhid">   
                                     </td>
                                 </tr>
                             <?php
                             }
                             ?>
                         </table>
+                </div>
+                <div class="col-12 col-lg-12">
+                    <hr>
+                    <input type="hidden" name="book_id" value="<?=$g_book_id?>">
+                    <input type="hidden" name="invoice_id" value="<?=$g_invoice_id?>">
+                    <input type="submit" name="submit" class="bg-primary color-white" value="Submit">
                 </div>
             </div>    
         </form>

@@ -6,7 +6,7 @@ defined('APP_PATH') OR exit('No direct script access allowed');
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link href="https://manastudio.id/repo/public/manastudio/mafura/mafura.css" rel="stylesheet">
+    <link href="<?=MAFURA_URL?>mafura.css" rel="stylesheet">
     <title><?=APP_TITLE?></title>
   </head>
   <body>
@@ -114,9 +114,9 @@ defined('APP_PATH') OR exit('No direct script access allowed');
                                 let id = setting.targetSelect[x].id;
                                 let exp_id = id.split('__');
                                 
-                                document.getElementById('input__'+x+'__qty').value = '';     
-                                document.getElementById('input__'+x+'__price').value = '';     
-                                document.getElementById('input__'+x+'__total').innerHTML = '';     
+                                document.getElementById('input__'+exp_id[1]+'__qty').value = '';     
+                                document.getElementById('input__'+exp_id[1]+'__price').value = '';     
+                                document.getElementById('input__'+exp_id[1]+'__total').innerHTML = '';     
                             }
                             
                         }
