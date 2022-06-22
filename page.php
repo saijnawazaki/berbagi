@@ -451,6 +451,26 @@ elseif($page == 'invoice_add_edit')
     {
         $arr_data['list_platform'][$row['platform_id']]['name'] = $row['platform_name'];    
     }
+
+    if($data_invoice['restaurant_id'] > 0)
+    {
+        $query = "
+            select
+                *
+            from
+                restaurant_menu
+            where
+                restaurant_id = '".$data_invoice['restaurant_id']."'
+            order by
+                rm_name
+        ";
+        $result = $db->query($query);
+        $arr_data['list_rm'] = array();
+        while($row = $result->fetchArray())
+        {
+            $arr_data['list_rm'][$row['rm_id']]['name'] = $row['rm_name'];    
+        }
+    }
 ?>
     <div class="container">
         <h1>
@@ -468,7 +488,7 @@ elseif($page == 'invoice_add_edit')
         </h1>
         <hr>
        
-        <form method="post" action="<?=APP_URL?>?page=book_add_edit&book_id=<?=$g_book_id?>" accept-charset="utf-8">
+        <form method="post" target="iframe_post" action="<?=APP_URL?>?page=invoice_add_edit" accept-charset="utf-8">
             <div class="row">
                 <div class="col-12 col-lg-4">
                         <label>Invoice Date</label>
@@ -484,7 +504,7 @@ elseif($page == 'invoice_add_edit')
                                         foreach($arr_data['list_restaurant'] as $restaurant_id => $val)
                                         {
                                         ?>
-                                            <option value="<?=$restaurant_id?>"><?=$val['name']?></option>
+                                            <option value="<?=$restaurant_id?>"<?=$data_invoice['restaurant_id'] == $restaurant_id ? ' selected' : ''?>><?=$val['name']?></option>
                                         <?php
                                         }
                                     }
@@ -506,23 +526,23 @@ elseif($page == 'invoice_add_edit')
                                 foreach($arr_data['list_platform'] as $platform_id => $val)
                                 {
                                 ?>
-                                    <option value="<?=$platform_id?>"><?=$val['name']?></option>
+                                    <option value="<?=$platform_id?>"<?=$data_invoice['platform_id'] == $platform_id ? ' selected' : ''?>><?=$val['name']?></option>
                                 <?php
                                 }
                             }
                             ?>
                         </select>
                         <label>Tax</label>
-                        <input class="text-right" type="text" name="tax_amount" value="<?=isset($data_invoice['tax_amount']) ? $data['tax_amount'] : ''?>">
+                        <input class="text-right" type="text" name="tax_amount" value="<?=isset($data_invoice['tax_amount']) && $data_invoice['tax_amount'] != 0 ? $data_invoice['tax_amount'] : ''?>">
                         <label>Discount</label>
-                        <input class="text-right" type="text" name="discount_amount" value="<?=isset($data_invoice['discount_amount']) ? $data['discount_amount'] : ''?>">
+                        <input class="text-right" type="text" name="discount_amount" value="<?=isset($data_invoice['discount_amount']) && $data_invoice['discount_amount'] != 0 ? $data_invoice['discount_amount'] : ''?>">
                         <label>Delivery</label>
-                        <input class="text-right" type="text" name="delivery_amount" value="<?=isset($data_invoice['delivery_amount']) ? $data['delivery_amount'] : ''?>">
+                        <input class="text-right" type="text" name="delivery_amount" value="<?=isset($data_invoice['delivery_amount']) && $data_invoice['delivery_amount'] != 0 ? $data_invoice['delivery_amount'] : ''?>">
                         
                         <label>Other</label>
-                        <input class="text-right" type="text" name="other_amount" value="<?=isset($data_invoice['other_amount']) ? $data['other_amount'] : ''?>">
+                        <input class="text-right" type="text" name="other_amount" value="<?=isset($data_invoice['other_amount']) && $data_invoice['other_amount'] != 0 ? $data_invoice['other_amount'] : ''?>">
                         <label>Adjustment</label>
-                        <input class="text-right" type="text" name="adjustment_amount" value="<?=isset($data_invoice['adjustment_amount']) ? $data['adjustment_amount'] : ''?>">
+                        <input class="text-right" type="text" name="adjustment_amount" value="<?=isset($data_invoice['adjustment_amount']) && $data_invoice['adjustment_amount'] != 0 ? $data_invoice['adjustment_amount'] : ''?>">
                         
                        
                     </div>
@@ -593,6 +613,17 @@ elseif($page == 'invoice_add_edit')
                                         ?>
                                         <select onchange="<?=$js?>" class="select__product" name="product_list[<?=$x?>][product_id]" id="input__<?=$x?>__product_id">
                                             <option value="0">-</option>
+                                            <?php
+                                                if(count($arr_data['list_rm']) > 0)
+                                                {
+                                                    foreach($arr_data['list_rm'] as $rm_id => $val)
+                                                    {
+                                                    ?>
+                                                        <option value="<?=$rm_id?>"><?=$val['name']?></option>
+                                                    <?php
+                                                    }
+                                                }
+                                            ?>
                                         </select>
                                     </td>
                                     <td>
@@ -620,6 +651,7 @@ elseif($page == 'invoice_add_edit')
                 </div>
             </div>    
         </form>
+        <iframe style="width:100%;" class="border-1" name="iframe_post" src=""></iframe>
     </div>
 <?php    
 }

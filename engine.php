@@ -507,6 +507,182 @@ if($_SERVER['REQUEST_METHOD'] === 'POST')
                     
         }    
     }
+    elseif($page == 'invoice_add_edit')
+    {
+        if(isset($_POST['submit']))
+        {
+            $v_invoice_date = parsedate($_POST['invoice_date']);
+            $v_restaurant_id = (int) $_POST['restaurant_id'];
+            $v_platform_id = (int) $_POST['platform_id'];
+            $v_tax_amount = (int) $_POST['tax_amount'];
+            $v_discount_amount = (int) $_POST['discount_amount'];
+            $v_delivery_amount = (int) $_POST['delivery_amount'];
+            $v_other_amount = (int) $_POST['other_amount'];
+            $v_adjustment_amount = (int) $_POST['adjustment_amount'];
+            $v_book_id = (int) $_POST['book_id'];
+            $v_invoice_id = (int) $_POST['invoice_id'];
+            $product_list = $_POST['product_list'];
+            $mess = '';
+
+            if($v_invoice_date == 0)
+            {
+                $mess .= 'Invoice Date Invalid<br>';    
+            }
+
+            if($v_restaurant_id == 0)
+            {
+                $mess .= 'Restaurant Invalid<br>';    
+            }
+
+            if($v_book_id == 0)
+            {
+                $mess .= 'Book Invalid<br>';    
+            }
+
+            if($v_platform_id == 0)
+            {
+                $mess .= 'Platform Invalid<br>';    
+            }
+
+            if($mess == '')
+            {
+                if($v_invoice_id == 0)
+                {
+                    $query = "select max(invoice_id) as last_id from invoice";
+                    $result = $db->query($query);
+                    $data = $result->fetchArray();
+                    $v_invoice_id = ((int) $data['last_id'])+1;
+                    
+                    $query = "
+                        insert into
+                            invoice
+                            (
+                                invoice_id,
+                                book_id,
+                                restaurant_id,
+                                invoice_date,
+                                tax_amount,
+                                discount_amount,
+                                delivery_amount,
+                                adjustment_amount,
+                                other_amount,
+                                platform_id,
+                                created_by,
+                                created_at
+                            )
+                        values
+                            (
+                                '".$v_invoice_id."',
+                                '".$v_book_id."',
+                                '".$v_restaurant_id."',
+                                '".$v_invoice_date."',
+                                '".$v_tax_amount."',
+                                '".$v_discount_amount."',
+                                '".$v_delivery_amount."',
+                                '".$v_adjustment_amount."',
+                                '".$v_other_amount."',
+                                '".$v_platform_id."',
+                                '".$ses['user_id']."',
+                                '".time()."'
+                            )
+                    ";    
+                }
+                else
+                {
+                    $query = "
+                        update
+                            invoice
+                        set
+                            restaurant_id = '".$v_restaurant_id."',   
+                            invoice_date = '".$v_invoice_date."',   
+                            tax_amount = '".$v_tax_amount."',   
+                            discount_amount = '".$v_discount_amount."',   
+                            delivery_amount = '".$v_delivery_amount."',   
+                            adjustment_amount = '".$v_adjustment_amount."',   
+                            other_amount = '".$v_other_amount."',   
+                            platform_id = '".$v_platform_id."',  
+                            created_by = '".$ses['user_id']."',   
+                            created_at = '".time()."'
+                        where
+                            invoice_id = '".$v_invoice_id."' 
+                    ";
+                }
+
+                if(! $db->query($query))
+                {
+                    $mess .= 'Failed Insert / Update Invoice<br>';
+                }
+            }
+
+            if($mess == '')
+            {
+                $query = "
+                    delete from invoice_details where invoice_id = '".$v_invoice_id."' 
+                ";
+                if(! $db->query($query))
+                {
+                    $mess .= 'FAILED DELETE Invoice Details<br>';
+                }
+
+                foreach($product_list as $index => $val)
+                {
+                    if($val['product_id'] > 0 && $val['qty'] > 0 && $val['price'] > 0)
+                    {
+                        $query = "select max(id_id) as last_id from invoice_details";
+                        $result = $db->query($query);
+                        $data = $result->fetchArray();
+                        $id_id = ((int) $data['last_id'])+1;
+
+                        $query = "
+                            insert into
+                                invoice_details
+                                (
+                                    id_id,
+                                    invoice_id,
+                                    rm_id,
+                                    qty,
+                                    price
+                                )
+                            values
+                                (
+                                    '".$id_id."',   
+                                    '".$v_invoice_id."',   
+                                    '".$product_id."',   
+                                    '".$qty."',   
+                                    '".$price."'   
+                                )
+                        ";
+
+                        if(! $db->query($query))
+                        {
+                            $mess .= 'FAILED Insert Invoice Details<br>';
+                        }
+                    }
+                }    
+            }
+
+            if($mess != '')
+            {
+            ?>
+                <script>
+                    parent.document.getElementById('alert_mess').style.display = '';
+                    parent.document.getElementById('alert_mess_content').innerHTML = '<h4>ERROR</h4><?=$mess?>';
+                </script>
+            <?php
+            }
+            else
+            {
+            ?>
+                <script>
+                    parent.window.open('<?=APP_URL?>?page=invoice_add_edit&book_id=<?=$v_book_id?>&invoice_id=<?=$v_invoice_id?>', '_self');
+                </script>
+            <?php
+            }
+
+            die();
+        }
+
+    }
     else
     {
         header('location: '.APP_URL.'?page=fatal_error');

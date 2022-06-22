@@ -53,6 +53,21 @@ defined('APP_PATH') OR exit('No direct script access allowed');
             <small>2022 saijnawazaki. Version: <?=APP_VERSION?> / Designed with Mafura</small>
         </div> 
     </footer>
+    <div role="alert" id="alert_mess" class="position-fixed top-0 left-0 width-fluid height-vh" style="display: none;">
+      <div class="position-relative width-fluid height-vh d-flex justify-content-center">
+        <div class="bg-dark position-absolute width-fluid height-vh top-0 left-0 opacity-3" data-toggle="hide" aria-controls="alert_open_dismiss"></div>
+        <div class="bg-light bc-muted color-dark br-2 p-3 position-absolute mt-3 ms-auto me-auto mb-auto" style="width: 500px;">
+          <div id="alert_mess_content"></div>
+          <div class="text-right">
+            <a href="javascript:void(0)" class="me-2 link-no-underline" onclick="document.getElementById('alert_mess').style.display = 'none';">
+              OK
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="<?=MAFURA_URL?>mafura.js"></script>
     <script>
         function createRequestObject()
         {
