@@ -647,9 +647,9 @@ if($_SERVER['REQUEST_METHOD'] === 'POST')
                                 (
                                     '".$id_id."',   
                                     '".$v_invoice_id."',   
-                                    '".$product_id."',   
-                                    '".$qty."',   
-                                    '".$price."'   
+                                    '".$val['product_id']."',   
+                                    '".$val['qty']."',   
+                                    '".$val['price']."'   
                                 )
                         ";
 
