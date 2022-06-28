@@ -1253,9 +1253,9 @@ elseif($page == 'split_bill_add_edit')
         die('Book ID Invalid');        
     }
     
-    if(! preg_match('/^[0-9]*$/', $g_invoice_id)) 
+    if(! preg_match('/^[0-9]*$/', $g_sb_id)) 
     {
-        die('Invoice ID Invalid');        
+        die('SB ID Invalid');        
     }
     
     if($g_book_id > 0)
@@ -1266,7 +1266,7 @@ elseif($page == 'split_bill_add_edit')
             from
                 book
             where
-                book_id = '".$_GET['book_id']."'
+                book_id = '".$g_book_id."'
         ";
         $result = $db->query($query);    
         $data = $result->fetchArray();
@@ -1276,19 +1276,28 @@ elseif($page == 'split_bill_add_edit')
             die('Book not yours!');    
         }
     }
+
+    $arr_data['list_invoice'] = array();
+    $query = "
+        select
+            *
+        from
+            invoice
+        where
+            book_id = '".$g_book_id."'
+        order by
+            created_at DESC
+    ";
+    $result = $db->query($query);    
+
+    while($row = $result->fetchArray())
+    {
+        $arr_data['list_invoice'][$row['invoice_date']][$row['invoice_id']]['title'] = 'INV/'.$row['book_id'].'/'.date('Ymd',$row['created_at']).'/'.$row['restaurant_id'].'/'.$row['invoice_id'];    
+    }
     
     if($g_sb_id > 0)
     {
-        $query = "
-            select
-                *
-            from
-                invoice
-            where
-                invoice_id = '".$g_invoice_id."'
-        ";
-        $result = $db->query($query);    
-        $data_invoice = $result->fetchArray();
+        
         
         //load details
         $query = "
@@ -1411,12 +1420,18 @@ elseif($page == 'split_bill_add_edit')
                         <?php
                         if(count($arr_data['list_invoice']) > 0)
                         {
-                            foreach($arr_data['list_invoice'] as $invoice_id => $val)
+                            foreach($arr_data['list_invoice'] as $invoice_date => $val)
                             {
-                            ?>
-                                <option value="<?=$invoice_id?>"<?=$data_split_bill['invoice_id'] == $invoice_id ? ' selected' : ''?>><?=$val['name']?></option>
-                            <?php
+                                echo '<optgroup label="'.date('d-m-Y',$invoice_date).'">';
+                                foreach($arr_data['list_invoice'][$invoice_date] as $invoice_id => $val)
+                                {
+                                ?>
+                                    <option value="<?=$invoice_id?>"<?=isset($data_split_bill) && $data_split_bill['invoice_id'] == $invoice_id ? ' selected' : ''?>><?=$val['title']?></option>
+                                <?php
+                                } 
+                                echo '</optgroup>';   
                             }
+                                
                         }
                         ?>
                     </select>

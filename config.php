@@ -2,8 +2,8 @@
 //Init
 define('APP_PATH', dirname(__FILE__));
 define('DB_PATH', APP_PATH.'/assets/berbagi.db');
-define('APP_URL', 'http://localhost/berbagi/');
-define('MAFURA_URL', 'https://manastudio.id/repo/public/manastudio/mafura/');  
+define('APP_URL', 'http://localhost/manastudio/public_html/app/berbagi/');
+define('MAFURA_URL', 'http://localhost/mafura/dist/');  
 
 date_default_timezone_set('Asia/Jakarta');
 
