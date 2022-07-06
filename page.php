@@ -1280,19 +1280,36 @@ elseif($page == 'split_bill_add_edit')
     $arr_data['list_invoice'] = array();
     $query = "
         select
-            *
+            invoice.*,
+            res_details.total
         from
             invoice
+        inner join
+        (
+            select
+                invoice_id,
+                SUM(qty*price) as total
+            from
+                invoice_details
+            group by
+                invoice_id
+        ) as res_details
+        on res_details.invoice_id = invoice.invoice_id
         where
-            book_id = '".$g_book_id."'
+            invoice.book_id = '".$g_book_id."'
         order by
-            created_at DESC
+            invoice.created_at DESC
     ";
     $result = $db->query($query);    
 
     while($row = $result->fetchArray())
     {
         $arr_data['list_invoice'][$row['invoice_date']][$row['invoice_id']]['title'] = 'INV/'.$row['book_id'].'/'.date('Ymd',$row['created_at']).'/'.$row['restaurant_id'].'/'.$row['invoice_id'];    
+        $arr_data['list_invoice'][$row['invoice_date']][$row['invoice_id']]['tax_amount'] = $row['tax_amount'];    
+        $arr_data['list_invoice'][$row['invoice_date']][$row['invoice_id']]['discount_amount'] = $row['discount_amount'];    
+        $arr_data['list_invoice'][$row['invoice_date']][$row['invoice_id']]['delivery_amount'] = $row['delivery_amount'];    
+        $arr_data['list_invoice'][$row['invoice_date']][$row['invoice_id']]['other_amount'] = $row['other_amount'];    
+        $arr_data['list_invoice'][$row['invoice_date']][$row['invoice_id']]['total'] = $row['total'];    
     }
     
     if($g_sb_id > 0)
@@ -1415,7 +1432,7 @@ elseif($page == 'split_bill_add_edit')
             <div class="row">
                 <div class="col-12 col-lg-12">
                     <label>Invoice</label>
-                    <select id="invoice_id" name="invoice_id" onchange="getData({page:'getSelectRestaurantMenuByRestaurantID',restaurantID: this.value,targetSelect:document.getElementsByClassName('select__product')})">
+                    <select id="invoice_id" name="invoice_id">
                         <option value="0">-</option>
                         <?php
                         if(count($arr_data['list_invoice']) > 0)
@@ -1425,8 +1442,16 @@ elseif($page == 'split_bill_add_edit')
                                 echo '<optgroup label="'.date('d-m-Y',$invoice_date).'">';
                                 foreach($arr_data['list_invoice'][$invoice_date] as $invoice_id => $val)
                                 {
+                                    $js = '
+                                        document.getElementById(\'inv__item\').innerHTML = \''.$val['total'].'\';
+                                        document.getElementById(\'inv__tax\').innerHTML = \''.$val['tax_amount'].'\';
+                                        document.getElementById(\'inv__discount\').innerHTML = \''.$val['discount_amount'].'\';
+                                        document.getElementById(\'inv__delivery\').innerHTML = \''.$val['delivery_amount'].'\';
+                                        document.getElementById(\'inv__other\').innerHTML = \''.$val['other_amount'].'\';
+                                        document.getElementById(\'inv__total\').innerHTML = \''.($val['total']+$val['tax_amount']-$val['discount_amount']+$val['delivery_amount']+$val['other_amount']).'\';
+                                    ';
                                 ?>
-                                    <option value="<?=$invoice_id?>"<?=isset($data_split_bill) && $data_split_bill['invoice_id'] == $invoice_id ? ' selected' : ''?>><?=$val['title']?></option>
+                                    <option onclick="<?=$js?>" value="<?=$invoice_id?>"<?=isset($data_split_bill) && $data_split_bill['invoice_id'] == $invoice_id ? ' selected' : ''?>><?=$val['title']?></option>
                                 <?php
                                 } 
                                 echo '</optgroup>';   
@@ -1437,6 +1462,36 @@ elseif($page == 'split_bill_add_edit')
                     </select>
                     
                     <table>
+                        <tr>
+                            <th colspan="2">Invoice</th>
+                            <td align="right">
+                                <span id="inv__item"></span>
+                            </td>
+                            <td align="right">
+                                &nbsp;
+                            </td>
+                            <td align="right">
+                                <span id="inv__tax"></span>
+                            </td>
+                            <td align="right">
+                                <span id="inv__discount"></span>
+                            </td>
+                            <td align="right">
+                                <span id="inv__delivery"></span>
+                            </td>
+                            <td align="right">
+                                <span id="inv__other"></span>
+                            </td>
+                            <td align="right">
+                                &nbsp;
+                            </td>
+                            <td align="right">
+                                <span id="inv__total"></span>
+                            </td>
+                            <td align="right">
+                                &nbsp;
+                            </td>
+                        </tr>
                         <tr>
                             <th rowspan="2">No</th>
                             <th>Person</th>
