@@ -1312,6 +1312,33 @@ elseif($page == 'split_bill_add_edit')
         $arr_data['list_invoice'][$row['invoice_date']][$row['invoice_id']]['total'] = $row['total'];    
     }
     
+    //load details
+    $arr_data['list_invoice_details'] = array();
+    $query = "
+        select
+            invoice_details.*,
+            restaurant_menu.rm_name
+        from
+            invoice_details
+        inner join
+            invoice
+            on invoice.invoice_id = invoice_details.invoice_id 
+            and invoice.book_id = '".$g_book_id."'
+        inner join
+            restaurant_menu
+            on restaurant_menu.rm_id = invoice_details.rm_id 
+        order by
+            restaurant_menu.rm_name ASC
+    ";
+    $result = $db->query($query);    
+
+    while($row = $result->fetchArray())
+    {
+        $arr_data['list_invoice_details'][$row['invoice_id']][$row['rm_id']]['name'] = $row['rm_name'];    
+        $arr_data['list_invoice_details'][$row['invoice_id']][$row['rm_id']]['qty'] = $row['qty'];    
+        $arr_data['list_invoice_details'][$row['invoice_id']][$row['rm_id']]['price'] = $row['price'];    
+    }
+    
     if($g_sb_id > 0)
     {
         
@@ -1442,6 +1469,23 @@ elseif($page == 'split_bill_add_edit')
                                 echo '<optgroup label="'.date('d-m-Y',$invoice_date).'">';
                                 foreach($arr_data['list_invoice'][$invoice_date] as $invoice_id => $val)
                                 {
+                                    $list_menu = '';
+                                    
+                                    foreach($arr_data['list_invoice_details'][$invoice_id] as $rm_id => $value)
+                                    {
+                                        $list_menu .= '<tr>';
+                                        $list_menu .= '<td>'.$value['name'].'</td>';
+                                        $list_menu .= '<td align=right>'.$value['qty'].'<br><input size=1 id=inputsub__##__qty type=text value=1><button type=button onclick=panel_menu_qty(##,'.($value['price']).');>PER</button></td>';
+                                        $list_menu .= '<td align=right>'.$value['price'].'<br><button type=button onclick=panel_menu(##,'.($value['price']).');>Once</button></td>';
+                                        $list_menu .= '<td align=center>'.($value['qty']*$value['price']).'<br><button type=button onclick=panel_menu(##,'.($value['qty']*$value['price']).');>ALL</button></td>';
+                                        $list_menu .= '</tr>';     
+                                    }
+                                    
+                                    if($list_menu != '')
+                                    {
+                                        $list_menu = '<table><tr><th>Product</th><th>Qty</th><th>Price</th><th>Total</th></tr>'.$list_menu.'</table>';
+                                    }
+                                    
                                     $js = '
                                         document.getElementById(\'inv__item\').innerHTML = \''.$val['total'].'\';
                                         document.getElementById(\'inv__tax\').innerHTML = \''.$val['tax_amount'].'\';
@@ -1449,6 +1493,14 @@ elseif($page == 'split_bill_add_edit')
                                         document.getElementById(\'inv__delivery\').innerHTML = \''.$val['delivery_amount'].'\';
                                         document.getElementById(\'inv__other\').innerHTML = \''.$val['other_amount'].'\';
                                         document.getElementById(\'inv__total\').innerHTML = \''.($val['total']+$val['tax_amount']-$val['discount_amount']+$val['delivery_amount']+$val['other_amount']).'\';
+                                        
+                                        let dl = document.getElementsByClassName(\'panel__menu\');
+                                        for(let x = 0; x < dl.length; x++)
+                                        {
+                                            let id = dl[x].id;
+                                            let id_split = id.split(\'__\')
+                                            dl[x].innerHTML = (\''.$list_menu.'\').replaceAll(\'##\',id_split[1]);
+                                        }
                                     ';
                                 ?>
                                     <option onclick="<?=$js?>" value="<?=$invoice_id?>"<?=isset($data_split_bill) && $data_split_bill['invoice_id'] == $invoice_id ? ' selected' : ''?>><?=$val['title']?></option>
@@ -1557,11 +1609,39 @@ elseif($page == 'split_bill_add_edit')
                                     </select>
                                 </td>
                                 <td>
-                                    <button id="input__<?=$x?>__items_amount"><?=isset($arr_data['list_save_sb'][$x]['items_amount']) ? $arr_data['list_save_sb'][$x]['items_amount'] : 0?></button>
+                                    <?php
+                                        $js = '
+                                            if(Number(document.getElementById(\'input__'.$x.'__items_amount_panel_tgg\').value) == 0)
+                                            {
+                                                document.getElementById(\'input__'.$x.'__items_amount_panel\').style.display = \'\';
+                                                document.getElementById(\'input__'.$x.'__items_amount_panel_tgg\').value = 1;       
+                                            }
+                                            else
+                                            {
+                                                document.getElementById(\'input__'.$x.'__items_amount_panel\').style.display = \'none\';
+                                                document.getElementById(\'input__'.$x.'__items_amount_panel_tgg\').value = 0;
+                                            }
+                                        ';
+                                        
+                                        $js_set = '
+                                            document.getElementById(\'input__'.$x.'__items_amount\').value = document.getElementById(\'input__'.$x.'__items_amount_calc\').value; 
+                                            document.getElementById(\'input__'.$x.'__items_amount_show\').innerHTML = document.getElementById(\'input__'.$x.'__items_amount_calc\').value; 
+                                            document.getElementById(\'input__'.$x.'__items_amount_panel\').style.display = \'none\';
+                                            document.getElementById(\'input__'.$x.'__items_amount_panel_tgg\').value = 0;
+                                        ';
+                                    ?>
+                                    <button onclick="<?=$js?>" type="button" id="input__<?=$x?>__items_amount_show"><?=isset($arr_data['list_save_sb'][$x]['items_amount']) ? $arr_data['list_save_sb'][$x]['items_amount'] : 0?></button>
                                     <input type="hidden" id="input__<?=$x?>__items_amount" value="<?=isset($arr_data['list_save_sb'][$x]['items_amount']) ? $arr_data['list_save_sb'][$x]['items_amount'] : ''?>">   
                                     <input type="hidden" id="input__<?=$x?>__items_amount_panel_tgg" value="0">
-                                    <div id="input__<?=$x?>__items_amount_panel" style="display:none;">
-                                        
+                                    <div id="input__<?=$x?>__items_amount_panel" class="position-absolute bg-light-lighten" style="display:none;;">
+                                        <div class="panel__menu" id="input__<?=$x?>__items_amount_panel_sub"></div>
+                                        <select id="input__<?=$x?>__items_amount_calc_mode">
+                                            <option value="+">+ ADD</option>
+                                            <option value="=">= SET</option>
+                                            <option value="-">- MENUS</option>
+                                        </select>
+                                        <input type="text" id="input__<?=$x?>__items_amount_calc" value="">
+                                        <button type="button" id="input__<?=$x?>__items_amount_calc_but" onclick="<?=$js_set?>">SET</button>    
                                     </div>
                                 </td>
                                 <td>
@@ -1591,6 +1671,48 @@ elseif($page == 'split_bill_add_edit')
             </div>    
         </form>
         <iframe style="width:100%;" class="border-1" name="iframe_post" src=""></iframe>
+        <script>
+            function panel_menu(count, val)
+            {
+                let mode = document.getElementById('input__'+count+'__items_amount_calc_mode').value;
+                let final_val = val;
+                 
+                if(mode == '=')
+                {
+                    document.getElementById('input__'+count+'__items_amount_calc').value = Number(final_val);    
+                }
+                else if(mode == '+')
+                {
+                    document.getElementById('input__'+count+'__items_amount_calc').value = Number(document.getElementById('input__'+count+'__items_amount_calc').value) + Number(final_val);    
+                }
+                else if(mode == '-')
+                {
+                    document.getElementById('input__'+count+'__items_amount_calc').value = Number(document.getElementById('input__'+count+'__items_amount_calc').value) - Number(final_val);    
+                }
+                    
+            }
+            
+            function panel_menu_qty(count, val)
+            {
+                let mode = document.getElementById('input__'+count+'__items_amount_calc_mode').value;
+                let qty_sub = document.getElementById('inputsub__'+count+'__qty').value;
+                
+                let final_val = qty_sub*val;
+                 
+                if(mode == '=')
+                {
+                    document.getElementById('input__'+count+'__items_amount_calc').value = Number(final_val);    
+                }
+                else if(mode == '+')
+                {
+                    document.getElementById('input__'+count+'__items_amount_calc').value = Number(document.getElementById('input__'+count+'__items_amount_calc').value) + Number(final_val);    
+                }
+                else if(mode == '-')
+                {
+                    document.getElementById('input__'+count+'__items_amount_calc').value = Number(document.getElementById('input__'+count+'__items_amount_calc').value) - Number(final_val);    
+                }
+            }
+        </script>
     </div>
 <?php    
 }
