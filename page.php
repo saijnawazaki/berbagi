@@ -1455,9 +1455,11 @@ elseif($page == 'split_bill_add_edit')
         </h1>
         <hr>
        
-        <form method="post" target="iframe_post" action="<?=APP_URL?>?page=invoice_add_edit" accept-charset="utf-8">
+        <form method="post" target="iframe_post" action="<?=APP_URL?>?page=split_bill_add_edit" accept-charset="utf-8">
             <div class="row">
                 <div class="col-12 col-lg-12">
+                    <button type="button" onclick="reCalc()">ReCalc</button>
+                    <hr>
                     <label>Invoice</label>
                     <select id="invoice_id" name="invoice_id">
                         <option value="0">-</option>
@@ -1488,11 +1490,17 @@ elseif($page == 'split_bill_add_edit')
                                     
                                     $js = '
                                         document.getElementById(\'inv__item\').innerHTML = \''.$val['total'].'\';
+                                        document.getElementById(\'inv__item_hid\').value = \''.$val['total'].'\';
                                         document.getElementById(\'inv__tax\').innerHTML = \''.$val['tax_amount'].'\';
+                                        document.getElementById(\'inv__tax_hid\').value = \''.$val['tax_amount'].'\';
                                         document.getElementById(\'inv__discount\').innerHTML = \''.$val['discount_amount'].'\';
+                                        document.getElementById(\'inv__discount_hid\').value = \''.$val['discount_amount'].'\';
                                         document.getElementById(\'inv__delivery\').innerHTML = \''.$val['delivery_amount'].'\';
+                                        document.getElementById(\'inv__delivery_hid\').value = \''.$val['delivery_amount'].'\';
                                         document.getElementById(\'inv__other\').innerHTML = \''.$val['other_amount'].'\';
+                                        document.getElementById(\'inv__other_hid\').value = \''.$val['other_amount'].'\';
                                         document.getElementById(\'inv__total\').innerHTML = \''.($val['total']+$val['tax_amount']-$val['discount_amount']+$val['delivery_amount']+$val['other_amount']).'\';
+                                        document.getElementById(\'inv__total_hid\').value = \''.($val['total']+$val['tax_amount']-$val['discount_amount']+$val['delivery_amount']+$val['other_amount']).'\';
                                         
                                         let dl = document.getElementsByClassName(\'panel__menu\');
                                         for(let x = 0; x < dl.length; x++)
@@ -1518,27 +1526,33 @@ elseif($page == 'split_bill_add_edit')
                             <th colspan="2">Invoice</th>
                             <td align="right">
                                 <span id="inv__item"></span>
+                                <input type="hidden" id="inv__item_hid">
                             </td>
                             <td align="right">
                                 &nbsp;
                             </td>
                             <td align="right">
                                 <span id="inv__tax"></span>
+                                <input type="hidden" id="inv__tax_hid">
                             </td>
                             <td align="right">
                                 <span id="inv__discount"></span>
+                                <input type="hidden" id="inv__discount_hid">
                             </td>
                             <td align="right">
                                 <span id="inv__delivery"></span>
+                                <input type="hidden" id="inv__delivery_hid">
                             </td>
                             <td align="right">
                                 <span id="inv__other"></span>
+                                <span id="inv__other_hid"></span>
                             </td>
                             <td align="right">
                                 &nbsp;
                             </td>
                             <td align="right">
                                 <span id="inv__total"></span>
+                                <span id="inv__total_hid"></span>
                             </td>
                             <td align="right">
                                 &nbsp;
@@ -1560,30 +1574,39 @@ elseif($page == 'split_bill_add_edit')
                         <tr>
                             <th>
                                 <span id="info__tot__person"></span>
+                                <input type="hidden" id="info__tot__person_hid">
                             </th>
                             <th>
                                 <span id="info__tot__items"></span>
+                                <input type="hidden" id="info__tot__items_hid">
                             </th>
                             <th>
                                 <span id="info__tot__items_percent"></span>
+                                <input type="hidden" id="info__tot__items_percent_hid">
                             </th>
                             <th>
                                 <span id="info__tot__tax"></span>
+                                <input type="hidden" id="info__tot__tax_hid">
                             </th>
                             <th>
                                 <span id="info__tot__discount"></span>
+                                <input type="hidden" id="info__tot__discount_hid">
                             </th>
                             <th>
                                 <span id="info__tot__delivery"></span>
+                                <input type="hidden" id="info__tot__delivery_hid">
                             </th>
                             <th>
                                 <span id="info__tot__other"></span>
+                                <input type="hidden" id="info__tot__other_hid">
                             </th>
                             <th>
                                 <span id="info__tot__adjustment"></span>
+                                <input type="hidden" id="info__tot__adjustment_hid">
                             </th>
                             <th>
                                 <span id="info__tot__total"></span>
+                                <input type="hidden" id="info__tot__total_hid">
                             </th>
                         </tr>
                         <?php
@@ -1631,7 +1654,7 @@ elseif($page == 'split_bill_add_edit')
                                         ';
                                     ?>
                                     <button onclick="<?=$js?>" type="button" id="input__<?=$x?>__items_amount_show"><?=isset($arr_data['list_save_sb'][$x]['items_amount']) ? $arr_data['list_save_sb'][$x]['items_amount'] : 0?></button>
-                                    <input type="hidden" id="input__<?=$x?>__items_amount" value="<?=isset($arr_data['list_save_sb'][$x]['items_amount']) ? $arr_data['list_save_sb'][$x]['items_amount'] : ''?>">   
+                                    <input class="data__loop" type="hidden" name="sb_list[<?=$x?>][items]" id="input__<?=$x?>__items_amount" value="<?=isset($arr_data['list_save_sb'][$x]['items_amount']) ? $arr_data['list_save_sb'][$x]['items_amount'] : ''?>">   
                                     <input type="hidden" id="input__<?=$x?>__items_amount_panel_tgg" value="0">
                                     <div id="input__<?=$x?>__items_amount_panel" class="position-absolute bg-light-lighten" style="display:none;;">
                                         <div class="panel__menu" id="input__<?=$x?>__items_amount_panel_sub"></div>
@@ -1645,15 +1668,34 @@ elseif($page == 'split_bill_add_edit')
                                     </div>
                                 </td>
                                 <td>
-                                    <input class="text-right" type="text" name="product_list[<?=$x?>][qty]" id="input__<?=$x?>__qty" value="<?=isset($arr_data['list_product'][$x]['qty']) ? $arr_data['list_product'][$x]['qty'] : ''?>">
+                                    <span id="input__<?=$x?>__items_percent"></span>
+                                    <input type="hidden" id="input__<?=$x?>__items_percent_hid" name="sb_list[<?=$x?>][items_percent]" value="">
                                 </td>
                                 <td>
-                                    <input class="text-right" type="text" name="product_list[<?=$x?>][price]" id="input__<?=$x?>__price" value="<?=isset($arr_data['list_product'][$x]['price']) ? $arr_data['list_product'][$x]['price'] : ''?>">
+                                    <span id="input__<?=$x?>__items_tax"></span>
+                                    <input type="hidden" id="input__<?=$x?>__items_tax_hid" name="sb_list[<?=$x?>][tax]" value="">
                                 </td>
-                                    
                                 <td>
-                                    <span id="input__<?=$x?>__total"><?=isset($arr_data['list_product'][$x]['qty']) && isset($arr_data['list_product'][$x]['price']) ? $arr_data['list_product'][$x]['qty']*$arr_data['list_product'][$x]['price'] : ''?></span>
-                                    <input type="hidden" id="input__<?=$x?>__totalhid" value="<?=isset($arr_data['list_product'][$x]['qty']) && isset($arr_data['list_product'][$x]['price']) ? $arr_data['list_product'][$x]['qty']*$arr_data['list_product'][$x]['price'] : ''?>">   
+                                    <span id="input__<?=$x?>__items_discount"></span>
+                                    <input type="hidden" id="input__<?=$x?>__items_discount_hid" name="sb_list[<?=$x?>][discount]" value="">
+                                </td>
+                                <td>
+                                    <span id="input__<?=$x?>__items_delivery"></span>
+                                    <input type="hidden" id="input__<?=$x?>__items_delivery_hid" name="sb_list[<?=$x?>][delivery]" value="">
+                                </td>
+                                <td>
+                                    <span id="input__<?=$x?>__items_other"></span>
+                                    <input type="hidden" id="input__<?=$x?>__items_other_hid" name="sb_list[<?=$x?>][other]" value="">
+                                </td>
+                                <td>
+                                    <input type="text" id="input__<?=$x?>__items_adjustment" name="sb_list[<?=$x?>][adjustment]" value="">
+                                </td>
+                                <td>
+                                    <span id="input__<?=$x?>__items_total"></span>
+                                    <input type="hidden" id="input__<?=$x?>__items_total_hid" name="sb_list[<?=$x?>][total]" value="">
+                                </td>
+                                <td>
+                                    <textarea id="input__<?=$x?>__items_remarks" name="sb_list[<?=$x?>][remarks]"></textarea>
                                 </td>
                             </tr>
                         <?php
@@ -1665,7 +1707,7 @@ elseif($page == 'split_bill_add_edit')
                 <div class="col-12 col-lg-12">
                     <hr>
                     <input type="hidden" name="book_id" value="<?=$g_book_id?>">
-                    <input type="hidden" name="invoice_id" value="<?=$g_invoice_id?>">
+                    <input type="hidden" name="sb_id" value="<?=$g_sb_id?>">
                     <input type="submit" name="submit" class="bg-primary color-white" value="Submit">
                 </div>
             </div>    
@@ -1711,6 +1753,107 @@ elseif($page == 'split_bill_add_edit')
                 {
                     document.getElementById('input__'+count+'__items_amount_calc').value = Number(document.getElementById('input__'+count+'__items_amount_calc').value) - Number(final_val);    
                 }
+            }
+
+            function reCalc()
+            {
+                let dl = document.getElementsByClassName('data__loop');
+
+                let tot_item = 0;
+                let tot_person = 0;
+                for(let x = 0; x < dl.length; x++)
+                {
+                    var user_item = Number(dl[x].value);
+                    
+                    if(user_item > 0)
+                    {
+                        tot_item += user_item;
+                        tot_person ++;
+                    }
+                }
+
+                document.getElementById('info__tot__person').innerHTML = tot_person; 
+                document.getElementById('info__tot__person_hid').value = tot_person; 
+                document.getElementById('info__tot__items').innerHTML = tot_item; 
+                document.getElementById('info__tot__items_hid').value = tot_item; 
+
+                let sub_tot_user_item_percent = 0;
+                let sub_tot_user_tax = 0;
+                let sub_tot_user_discount = 0;
+                let sub_tot_user_delivery = 0;
+                let sub_tot_user_other = 0;
+                let sub_tot_user_adjustment = 0;
+                let sub_tot_user_total = 0;
+
+                //loop 2
+                for(let x = 0; x < dl.length; x++)
+                {
+                    var user_item = Number(dl[x].value);
+                    var user_id = dl[x].id;
+                    var exp_user_id = user_id.split('__');
+                    var no = exp_user_id[1];
+                    var inv_tax = Number(document.getElementById('inv__tax_hid').value);
+                    var inv_discount = Number(document.getElementById('inv__discount_hid').value);
+                    var inv_delivery = Number(document.getElementById('inv__delivery_hid').value);
+                    var inv_other = Number(document.getElementById('inv__other_hid').value);
+
+                    if(user_item > 0)
+                    {
+                        let user_item_percent = Number((user_item/tot_item*100).toFixed(2));
+                        let user_tax = Number(((user_item_percent/100)*inv_tax).toFixed(2)); 
+                        let user_discount = Number(((user_item_percent/100)*inv_discount).toFixed(2)); 
+                        let user_delivery = Number((inv_delivery/tot_person).toFixed(2)); 
+                        let user_other = Number(((user_item_percent/100)*inv_other).toFixed(2));
+                        let user_adjustment = Number((Number(document.getElementById('input__'+no+'__items_adjustment').value)).toFixed(2));
+                        let user_total = Number((user_item+user_tax-user_discount+user_delivery+user_other+user_adjustment).toFixed(2)); 
+
+                        sub_tot_user_item_percent += user_item_percent; 
+                        sub_tot_user_tax += user_tax; 
+                        sub_tot_user_discount += user_discount; 
+                        sub_tot_user_delivery += user_delivery; 
+                        sub_tot_user_other += user_other; 
+                        sub_tot_user_adjustment += user_adjustment;
+                        sub_tot_user_total += user_total; 
+
+                        document.getElementById('input__'+no+'__items_percent').innerHTML = user_item_percent;
+                        document.getElementById('input__'+no+'__items_percent_hid').value = user_item_percent;
+
+                        //tax
+                        document.getElementById('input__'+no+'__items_tax').innerHTML = user_tax;
+                        document.getElementById('input__'+no+'__items_tax_hid').value = user_tax;
+
+                        //discount
+                        document.getElementById('input__'+no+'__items_discount').innerHTML = user_discount;
+                        document.getElementById('input__'+no+'__items_discount_hid').value = user_discount;
+
+                        //Delivery
+                        document.getElementById('input__'+no+'__items_delivery').innerHTML = user_delivery;
+                        document.getElementById('input__'+no+'__items_delivery_hid').value = user_delivery;
+
+                        //Other
+                        document.getElementById('input__'+no+'__items_other').innerHTML = user_other;
+                        document.getElementById('input__'+no+'__items_other_hid').value = user_other;
+
+                        //Total
+                        document.getElementById('input__'+no+'__items_total').innerHTML = user_total;
+                        document.getElementById('input__'+no+'__items_total_hid').value = user_total;
+                    }
+                }
+
+                document.getElementById('info__tot__items_percent').innerHTML = sub_tot_user_item_percent; 
+                document.getElementById('info__tot__items_percent_hid').value = sub_tot_user_item_percent;
+                document.getElementById('info__tot__tax').innerHTML = sub_tot_user_tax; 
+                document.getElementById('info__tot__tax_hid').value = sub_tot_user_tax;
+                document.getElementById('info__tot__discount').innerHTML = sub_tot_user_discount; 
+                document.getElementById('info__tot__discount_hid').value = sub_tot_user_discount;
+                document.getElementById('info__tot__delivery').innerHTML = sub_tot_user_delivery; 
+                document.getElementById('info__tot__delivery_hid').value = sub_tot_user_delivery;
+                document.getElementById('info__tot__other').innerHTML = sub_tot_user_other; 
+                document.getElementById('info__tot__other_hid').value = sub_tot_user_other;
+                document.getElementById('info__tot__adjustment').innerHTML = sub_tot_user_adjustment; 
+                document.getElementById('info__tot__adjustment_hid').value = sub_tot_user_adjustment;
+                document.getElementById('info__tot__total').innerHTML = sub_tot_user_total; 
+                document.getElementById('info__tot__total_hid').value = sub_tot_user_total;
             }
         </script>
     </div>

@@ -683,6 +683,17 @@ if($_SERVER['REQUEST_METHOD'] === 'POST')
         }
 
     }
+    elseif($page == 'split_bill_add_edit')
+    {
+        if(isset($_POST['submit']))
+        {
+            $sb_list = $_POST['sb_list'];
+            $invoice_id = (int) $_POST['invoice_id'];
+
+            print_r($sb_list);
+            die();
+        }
+    }
     else
     {
         header('location: '.APP_URL.'?page=fatal_error');
