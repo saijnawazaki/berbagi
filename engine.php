@@ -690,7 +690,7 @@ if($_SERVER['REQUEST_METHOD'] === 'POST')
             $sb_list = $_POST['sb_list'];
             $invoice_id = (int) $_POST['invoice_id'];
 
-            print_r($sb_list);
+            print('<pre>'.print_r($sb_list,true).'</pre>');
             die();
         }
     }
