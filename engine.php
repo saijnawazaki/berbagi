@@ -687,10 +687,148 @@ if($_SERVER['REQUEST_METHOD'] === 'POST')
     {
         if(isset($_POST['submit']))
         {
-            $sb_list = $_POST['sb_list'];
-            $invoice_id = (int) $_POST['invoice_id'];
+            $v_sb_list = $_POST['sb_list'];
+            $v_sb_id = (int) $_POST['sb_id'];
+            $v_sb_date = parsedate($_POST['sb_date']);
+            $v_book_id = (int) $_POST['book_id'];
+            $v_invoice_id = (int) $_POST['invoice_id'];
+            $mess = '';
+            
+            if($v_book_id == 0)
+            {
+                $mess .= 'Book Invalid<br>';    
+            }
+            
+            if($v_invoice_id == 0)
+            {
+                $mess .= 'Invoice Invalid<br>';    
+            }
+            
+            if($mess == '')
+            {
+                if($v_sb_id == 0)
+                {
+                    $query = "select max(sb_id) as last_id from split_bill";
+                    $result = $db->query($query);
+                    $data = $result->fetchArray();
+                    $v_sb_id = ((int) $data['last_id'])+1;
+                    
+                    $query = "
+                        insert into
+                            split_bill
+                            (
+                                sb_id,
+                                invoice_id,
+                                sb_date,
+                                created_by,
+                                created_at
+                            )
+                        values
+                            (
+                                '".$v_sb_id."',
+                                '".$v_invoice_id."',
+                                '".$v_sb_date."',
+                                '".$ses['user_id']."',
+                                '".time()."'
+                            )
+                    ";    
+                }
+                else
+                {
+                    $query = "
+                        update
+                            split_bill
+                        set
+                            invoice_id = '".$v_invoice_id."',   
+                            sb_date = '".$v_sb_date."',   
+                            created_by = '".$ses['user_id']."',   
+                            created_at = '".time()."'
+                        where
+                            sb_id = '".$v_sb_id."' 
+                    ";
+                }
 
-            print('<pre>'.print_r($sb_list,true).'</pre>');
+                if(! $db->query($query))
+                {
+                    $mess .= 'Failed Insert / Update Invoice<br>';
+                }
+            }
+                         
+            if($mess == '')
+            {
+                $query = "
+                    delete from split_bill_details where sb_id = '".$v_sb_id."' 
+                ";
+                if(! $db->query($query))
+                {
+                    $mess .= 'FAILED DELETE Split Bill Details<br>';
+                }
+
+                foreach($v_sb_list as $index => $val)
+                {
+                    if($val['person_id'] > 0 && $val['items'] > 0)
+                    {
+                        $query = "select max(sbd_id) as last_id from split_bill_details";
+                        $result = $db->query($query);
+                        $data = $result->fetchArray();
+                        $sbd_id = ((int) $data['last_id'])+1;
+
+                        $query = "
+                            insert into
+                                split_bill_details
+                                (
+                                    sbd_id,
+                                    sb_id,
+                                    person_id,
+                                    item_amount,
+                                    tax_amount,
+                                    discount_amount,
+                                    delivery_amount,
+                                    other_amount,
+                                    adjustment_amount,
+                                    remarks
+                                )
+                            values
+                                (
+                                    '".$sbd_id."',   
+                                    '".$v_sb_id."',   
+                                    '".$val['person_id']."',   
+                                    '".$val['items']."',   
+                                    '".$val['tax']."',   
+                                    '".$val['discount']."',   
+                                    '".$val['delivery']."',   
+                                    '".$val['other']."',   
+                                    '".$val['adjustment']."',   
+                                    '".$val['remarks']."'   
+                                )
+                        ";
+
+                        if(! $db->query($query))
+                        {
+                            $mess .= 'FAILED Insert Split Bill Details<br>';
+                        }
+                    }
+                }    
+            }
+            
+            if($mess != '')
+            {
+            ?>
+                <script>
+                    parent.document.getElementById('alert_mess').style.display = '';
+                    parent.document.getElementById('alert_mess_content').innerHTML = '<h4>ERROR</h4><?=$mess?>';
+                </script>
+            <?php
+            }
+            else
+            {
+            ?>
+                <script>
+                    parent.window.open('<?=APP_URL?>?page=split_bill_add_edit&book_id=<?=$v_book_id?>&sb_id=<?=$v_sb_id?>', '_self');
+                </script>
+            <?php
+            }
+
             die();
         }
     }

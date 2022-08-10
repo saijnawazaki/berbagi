@@ -1520,7 +1520,9 @@ elseif($page == 'split_bill_add_edit')
                         }
                         ?>
                     </select>
-                    
+                    <label>Split Bill Date</label>
+                    <input type="date" name="sb_date" value="<?=isset($data_split_bill['sb_date']) ? date('Y-m-d',$data_split_bill['sb_date']) : date('Y-m-d')?>">
+                        
                     <table>
                         <tr>
                             <th colspan="2">Invoice</th>
