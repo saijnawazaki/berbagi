@@ -442,7 +442,9 @@ elseif($page == 'invoice_add_edit')
                 restaurant_menu.rm_name ASC
         ";
         $result = $db->query($query);
-        $arr_data['list_book'] = array();
+        $arr_data['list_product'] = array();
+        $arr_data['list_product_tot']['qty'] = 0;
+        $arr_data['list_product_tot']['total'] = 0;
         $no = 0;
         while($row = $result->fetchArray())
         {
@@ -451,7 +453,10 @@ elseif($page == 'invoice_add_edit')
             $arr_data['list_product'][$no]['rm_id'] = $row['rm_id'];    
             $arr_data['list_product'][$no]['rm_name'] = $row['rm_name'];    
             $arr_data['list_product'][$no]['qty'] = $row['qty'];    
-            $arr_data['list_product'][$no]['price'] = $row['price'];    
+            $arr_data['list_product'][$no]['price'] = $row['price'];
+
+            $arr_data['list_product_tot']['qty'] += $row['qty'];    
+            $arr_data['list_product_tot']['total'] += $row['qty']*$row['price'];    
         }
     }
     
@@ -590,10 +595,10 @@ elseif($page == 'invoice_add_edit')
                             </tr>
                             <tr>
                                 <th>
-                                    <span id="info__tot__qty"></span>
+                                    <span id="info__tot__qty"><?=isset($arr_data['list_product_tot']['qty']) ? $arr_data['list_product_tot']['qty'] : ''?></span>
                                 </th>
                                 <th>
-                                    <span id="info__tot__total"></span>
+                                    <span id="info__tot__total"><?=isset($arr_data['list_product_tot']['total']) ? $arr_data['list_product_tot']['total'] : ''?></span>
                                 </th>
                             </tr>
                             <?php
@@ -1161,20 +1166,27 @@ elseif($page == 'split_bill')
     $arr_data['list_invoice'] = array();
     $query = "
         select
-            *
+            split_bill.*,
+            invoice.book_id,
+            invoice.created_at as inv_created_at,
+            invoice.restaurant_id,
+            invoice.invoice_date
         from
+            split_bill
+        inner join
             invoice
-        where
-            book_id = '".$g_book_id."'
+            on invoice.invoice_id = split_bill.invoice_id
+            and invoice.book_id = '".$g_book_id."'
         order by
-            created_at DESC
+            split_bill.created_at DESC
     ";
-    //$result = $db->query($query);    
-//    
-//    while($row = $result->fetchArray())
-//    {
-//        $arr_data['list_invoice'][$row['invoice_date']][$row['invoice_id']]['title'] = 'INV/'.$row['book_id'].'/'.date('Ymd',$row['created_at']).'/'.$row['restaurant_id'].'/'.$row['invoice_id'];    
-//    }
+    $result = $db->query($query);    
+   
+    while($row = $result->fetchArray())
+    {
+        $arr_data['list_invoice'][$row['created_at']][$row['sb_id']]['inv_code'] = 'INV/'.$row['book_id'].'/'.date('Ymd',$row['inv_created_at']).'/'.$row['restaurant_id'].'/'.$row['invoice_id'];    
+        $arr_data['list_invoice'][$row['created_at']][$row['sb_id']]['sb_code'] = 'SB/'.$row['book_id'].'/'.date('Ymd',$row['inv_created_at']).'/'.$row['restaurant_id'].'/'.$row['invoice_id'].'/'.$row['sb_id'];    
+    }
 ?>
     <div class="container">
         <h1>
@@ -1223,10 +1235,11 @@ elseif($page == 'split_bill')
                             ?>
                                 <tr>
                                     <td><?=$invoice_date_show?></td>
-                                    <td><?=$val['title']?> </td>
+                                    <td><?=$val['inv_code']?> </td>
+                                    <td><?=$val['sb_code']?> </td>
                                     <td>
-                                        <a class="button bg-warning" href="<?=APP_URL.'?page=invoice_add_edit&book_id='.$g_book_id.'&invoice_id='.$invoice_id?>">Edit</a>
-                                        <a target="_blank" class="button" href="<?=APP_URL.'?page=invoice_add_edit&book_id='.$g_book_id.'&invoice_id='.$invoice_id?>">Split Bill</a>
+                                        <a class="button bg-warning" href="<?=APP_URL.'?page=split_bill_add_edit&book_id='.$g_book_id.'&sb_id='.$invoice_id?>">Edit</a>
+                                        </a>
                                     </td>
                                 </tr>
                             <?php
@@ -1309,7 +1322,14 @@ elseif($page == 'split_bill_add_edit')
         $arr_data['list_invoice'][$row['invoice_date']][$row['invoice_id']]['discount_amount'] = $row['discount_amount'];    
         $arr_data['list_invoice'][$row['invoice_date']][$row['invoice_id']]['delivery_amount'] = $row['delivery_amount'];    
         $arr_data['list_invoice'][$row['invoice_date']][$row['invoice_id']]['other_amount'] = $row['other_amount'];    
-        $arr_data['list_invoice'][$row['invoice_date']][$row['invoice_id']]['total'] = $row['total'];    
+        $arr_data['list_invoice'][$row['invoice_date']][$row['invoice_id']]['total'] = $row['total'];
+
+        $arr_data['list_invoice_only'][$row['invoice_id']]['tax_amount'] = $row['tax_amount'];    
+        $arr_data['list_invoice_only'][$row['invoice_id']]['discount_amount'] = $row['discount_amount'];    
+        $arr_data['list_invoice_only'][$row['invoice_id']]['delivery_amount'] = $row['delivery_amount'];    
+        $arr_data['list_invoice_only'][$row['invoice_id']]['other_amount'] = $row['other_amount'];    
+        $arr_data['list_invoice_only'][$row['invoice_id']]['item_amount'] = 0;    
+        $arr_data['list_invoice_only'][$row['invoice_id']]['total'] = $row['total'];   
     }
     
     //load details
@@ -1336,93 +1356,77 @@ elseif($page == 'split_bill_add_edit')
     {
         $arr_data['list_invoice_details'][$row['invoice_id']][$row['rm_id']]['name'] = $row['rm_name'];    
         $arr_data['list_invoice_details'][$row['invoice_id']][$row['rm_id']]['qty'] = $row['qty'];    
-        $arr_data['list_invoice_details'][$row['invoice_id']][$row['rm_id']]['price'] = $row['price'];    
+        $arr_data['list_invoice_details'][$row['invoice_id']][$row['rm_id']]['price'] = $row['price'];
+
+        $arr_data['list_invoice_only'][$row['invoice_id']]['item_amount'] += $row['qty']*$row['price'];    
     }
     
     if($g_sb_id > 0)
     {
-        
+        //load header
+        $query = "
+            select
+                *
+            from
+                split_bill
+            where
+                split_bill.sb_id = '".$g_sb_id."'
+        ";
+        $result = $db->query($query);
+        $arr_data['list_sb_header'] = array();
+        while($row = $result->fetchArray())
+        {
+            $arr_data['list_sb_header']['invoice_id'] = $row['invoice_id'];  
+            $arr_data['list_sb_header']['sb_date'] = $row['sb_date']; 
+        }
         
         //load details
         $query = "
             select
-                *
+                split_bill_details.*,
+                person.person_name
             from
-                invoice_details
+                split_bill_details
             inner join
-                restaurant_menu
-                on restaurant_menu.rm_id = invoice_details.rm_id
+                person
+                on person.person_id = split_bill_details.person_id 
             where
-                invoice_details.invoice_id = '".$g_invoice_id."'
+                split_bill_details.sb_id = '".$g_sb_id."'
             order by
-                restaurant_menu.rm_name ASC
+                person.person_name ASC
         ";
         $result = $db->query($query);
-        $arr_data['list_book'] = array();
+        $arr_data['list_sb_details'] = array();
         $no = 0;
+        $arr_data['list_sb_header']['item_amount'] = 0;
+        $arr_data['list_sb_header']['tax_amount'] = 0;
+        $arr_data['list_sb_header']['discount_amount'] = 0;
+        $arr_data['list_sb_header']['delivery_amount'] = 0;
+        $arr_data['list_sb_header']['other_amount'] = 0;
+        $arr_data['list_sb_header']['adjustment_amount'] = 0;
+        $arr_data['list_sb_header']['person'] = 0;
         while($row = $result->fetchArray())
         {
             $no++;
-            $arr_data['list_product'][$no]['id_id'] = $row['id_id'];    
-            $arr_data['list_product'][$no]['rm_id'] = $row['rm_id'];    
-            $arr_data['list_product'][$no]['rm_name'] = $row['rm_name'];    
-            $arr_data['list_product'][$no]['qty'] = $row['qty'];    
-            $arr_data['list_product'][$no]['price'] = $row['price'];    
+            $arr_data['list_sb_details'][$no]['person_id'] = $row['person_id'];  
+            $arr_data['list_sb_details'][$no]['person_name'] = $row['person_name'];  
+            $arr_data['list_sb_details'][$no]['item_amount'] = $row['item_amount'];  
+            $arr_data['list_sb_details'][$no]['tax_amount'] = $row['tax_amount'];  
+            $arr_data['list_sb_details'][$no]['discount_amount'] = $row['discount_amount'];  
+            $arr_data['list_sb_details'][$no]['delivery_amount'] = $row['delivery_amount'];  
+            $arr_data['list_sb_details'][$no]['other_amount'] = $row['other_amount'];  
+            $arr_data['list_sb_details'][$no]['adjustment_amount'] = $row['adjustment_amount'];  
+            $arr_data['list_sb_details'][$no]['remarks'] = $row['remarks']; 
+            $arr_data['list_sb_header']['item_amount'] += $row['item_amount'];
+            $arr_data['list_sb_header']['tax_amount'] += $row['tax_amount'];
+            $arr_data['list_sb_header']['discount_amount'] += $row['discount_amount'];
+            $arr_data['list_sb_header']['delivery_amount'] += $row['delivery_amount'];
+            $arr_data['list_sb_header']['other_amount'] += $row['other_amount'];
+            $arr_data['list_sb_header']['adjustment_amount'] += $row['adjustment_amount']; 
+            $arr_data['list_sb_header']['person'] += 1; 
         }
     }
-    
-    //load Res
-    $query = "
-        select
-            *
-        from
-            restaurant
-        order by
-            restaurant.restaurant_name ASC
-    ";
-    $result = $db->query($query);
-    $arr_data['list_book'] = array();
-    while($row = $result->fetchArray())
-    {
-        $arr_data['list_restaurant'][$row['restaurant_id']]['name'] = $row['restaurant_name'];    
-    }
-
-    //load Platform
-    $query = "
-        select
-            *
-        from
-            platform
-        order by
-            platform.platform_name ASC
-    ";
-    $result = $db->query($query);
-    $arr_data['list_platform'] = array();
-    while($row = $result->fetchArray())
-    {
-        $arr_data['list_platform'][$row['platform_id']]['name'] = $row['platform_name'];    
-    }
-
-    if(isset($data_invoice) && $data_invoice['restaurant_id'] > 0)
-    {
-        $query = "
-            select
-                *
-            from
-                restaurant_menu
-            where
-                restaurant_id = '".$data_invoice['restaurant_id']."'
-            order by
-                rm_name
-        ";
-        $result = $db->query($query);
-        $arr_data['list_rm'] = array();
-        while($row = $result->fetchArray())
-        {
-            $arr_data['list_rm'][$row['rm_id']]['name'] = $row['rm_name'];    
-        }
-    }
-    
+   
     //load person
     $query = "
         select
@@ -1441,7 +1445,7 @@ elseif($page == 'split_bill_add_edit')
 ?>
     <div class="container">
         <h1>
-            <a href="<?=APP_URL.'?page=invoice&book_id='.$g_book_id?>">
+            <a href="<?=APP_URL.'?page=split_bill&book_id='.$g_book_id?>">
                 <svg id="i-chevron-left" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentcolor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2">
                     <path d="M20 30 L8 16 20 2" />
                 </svg>
@@ -1511,7 +1515,7 @@ elseif($page == 'split_bill_add_edit')
                                         }
                                     ';
                                 ?>
-                                    <option onclick="<?=$js?>" value="<?=$invoice_id?>"<?=isset($data_split_bill) && $data_split_bill['invoice_id'] == $invoice_id ? ' selected' : ''?>><?=$val['title']?></option>
+                                    <option onclick="<?=$js?>" value="<?=$invoice_id?>"<?=isset($arr_data['list_sb_header']) && $arr_data['list_sb_header']['invoice_id'] == $invoice_id ? ' selected' : ''?>><?=$val['title']?></option>
                                 <?php
                                 } 
                                 echo '</optgroup>';   
@@ -1521,40 +1525,40 @@ elseif($page == 'split_bill_add_edit')
                         ?>
                     </select>
                     <label>Split Bill Date</label>
-                    <input type="date" name="sb_date" value="<?=isset($data_split_bill['sb_date']) ? date('Y-m-d',$data_split_bill['sb_date']) : date('Y-m-d')?>">
+                    <input type="date" name="sb_date" value="<?=isset($arr_data['list_sb_header']['sb_date']) ? date('Y-m-d',$arr_data['list_sb_header']['sb_date']) : date('Y-m-d')?>">
                         
                     <table>
                         <tr>
                             <th colspan="2">Invoice</th>
                             <td align="right">
-                                <span id="inv__item"></span>
-                                <input type="hidden" id="inv__item_hid">
+                                <span id="inv__item"><?=$arr_data['list_sb_header']['invoice_id'] && isset($arr_data['list_invoice_only'][$arr_data['list_sb_header']['invoice_id']]['item_amount']) ? $arr_data['list_invoice_only'][$arr_data['list_sb_header']['invoice_id']]['item_amount'] : ''?></span>
+                                <input type="hidden" id="inv__item_hid" value="<?=$arr_data['list_sb_header']['invoice_id'] && isset($arr_data['list_invoice_only'][$arr_data['list_sb_header']['invoice_id']]['item_amount']) ? $arr_data['list_invoice_only'][$arr_data['list_sb_header']['invoice_id']]['item_amount'] : ''?>">
                             </td>
                             <td align="right">
                                 &nbsp;
                             </td>
                             <td align="right">
-                                <span id="inv__tax"></span>
-                                <input type="hidden" id="inv__tax_hid">
+                                <span id="inv__tax"><?=$arr_data['list_sb_header']['invoice_id'] && isset($arr_data['list_invoice_only'][$arr_data['list_sb_header']['invoice_id']]['tax_amount']) ? $arr_data['list_invoice_only'][$arr_data['list_sb_header']['invoice_id']]['tax_amount'] : ''?></span>
+                                <input type="hidden" id="inv__tax_hid" value="<?=$arr_data['list_sb_header']['invoice_id'] && isset($arr_data['list_invoice_only'][$arr_data['list_sb_header']['invoice_id']]['tax_amount']) ? $arr_data['list_invoice_only'][$arr_data['list_sb_header']['invoice_id']]['tax_amount'] : ''?>">
                             </td>
                             <td align="right">
-                                <span id="inv__discount"></span>
-                                <input type="hidden" id="inv__discount_hid">
+                                <span id="inv__discount"><?=$arr_data['list_sb_header']['invoice_id'] && isset($arr_data['list_invoice_only'][$arr_data['list_sb_header']['invoice_id']]['discount_amount']) ? $arr_data['list_invoice_only'][$arr_data['list_sb_header']['invoice_id']]['discount_amount'] : ''?></span>
+                                <input type="hidden" id="inv__discount_hid" value="<?=$arr_data['list_sb_header']['invoice_id'] && isset($arr_data['list_invoice_only'][$arr_data['list_sb_header']['invoice_id']]['discount_amount']) ? $arr_data['list_invoice_only'][$arr_data['list_sb_header']['invoice_id']]['discount_amount'] : ''?>">
                             </td>
                             <td align="right">
-                                <span id="inv__delivery"></span>
-                                <input type="hidden" id="inv__delivery_hid">
+                                <span id="inv__delivery"><?=$arr_data['list_sb_header']['invoice_id'] && isset($arr_data['list_invoice_only'][$arr_data['list_sb_header']['invoice_id']]['delivery_amount']) ? $arr_data['list_invoice_only'][$arr_data['list_sb_header']['invoice_id']]['delivery_amount'] : ''?></span>
+                                <input type="hidden" id="inv__delivery_hid" value="<?=$arr_data['list_sb_header']['invoice_id'] && isset($arr_data['list_invoice_only'][$arr_data['list_sb_header']['invoice_id']]['delivery_amount']) ? $arr_data['list_invoice_only'][$arr_data['list_sb_header']['invoice_id']]['delivery_amount'] : ''?>">
                             </td>
                             <td align="right">
-                                <span id="inv__other"></span>
-                                <span id="inv__other_hid"></span>
+                                <span id="inv__other"><?=$arr_data['list_sb_header']['invoice_id'] && isset($arr_data['list_invoice_only'][$arr_data['list_sb_header']['invoice_id']]['other_amount']) ? $arr_data['list_invoice_only'][$arr_data['list_sb_header']['invoice_id']]['other_amount'] : ''?></span>
+                                <input type="hidden" id="inv__other_hid" value="<?=$arr_data['list_sb_header']['invoice_id'] && isset($arr_data['list_invoice_only'][$arr_data['list_sb_header']['invoice_id']]['other_amount']) ? $arr_data['list_invoice_only'][$arr_data['list_sb_header']['invoice_id']]['other_amount'] : ''?>">
                             </td>
                             <td align="right">
                                 &nbsp;
                             </td>
                             <td align="right">
-                                <span id="inv__total"></span>
-                                <span id="inv__total_hid"></span>
+                                <span id="inv__total"><?=$arr_data['list_sb_header']['invoice_id'] && isset($arr_data['list_invoice_only'][$arr_data['list_sb_header']['invoice_id']]['item_amount']) ? $arr_data['list_invoice_only'][$arr_data['list_sb_header']['invoice_id']]['item_amount']+$arr_data['list_invoice_only'][$arr_data['list_sb_header']['invoice_id']]['tax_amount']-$arr_data['list_invoice_only'][$arr_data['list_sb_header']['invoice_id']]['discount_amount']+$arr_data['list_invoice_only'][$arr_data['list_sb_header']['invoice_id']]['delivery_amount']+$arr_data['list_invoice_only'][$arr_data['list_sb_header']['invoice_id']]['other_amount'] : ''?></span>
+                                <input type="hidden" id="inv__total_hid" value="<?=$arr_data['list_sb_header']['invoice_id'] && isset($arr_data['list_invoice_only'][$arr_data['list_sb_header']['invoice_id']]['item_amount']) ? $arr_data['list_invoice_only'][$arr_data['list_sb_header']['invoice_id']]['item_amount']+$arr_data['list_invoice_only'][$arr_data['list_sb_header']['invoice_id']]['tax_amount']-$arr_data['list_invoice_only'][$arr_data['list_sb_header']['invoice_id']]['discount_amount']+$arr_data['list_invoice_only'][$arr_data['list_sb_header']['invoice_id']]['delivery_amount']+$arr_data['list_invoice_only'][$arr_data['list_sb_header']['invoice_id']]['other_amount'] : ''?>">
                             </td>
                             <td align="right">
                                 &nbsp;
@@ -1575,40 +1579,40 @@ elseif($page == 'split_bill_add_edit')
                         </tr>
                         <tr>
                             <th>
-                                <span id="info__tot__person"></span>
-                                <input type="hidden" id="info__tot__person_hid">
+                                <span id="info__tot__person"><?=isset($arr_data['list_sb_header']['person']) ? $arr_data['list_sb_header']['person'] : ''?></span>
+                                <input type="hidden" id="info__tot__person_hid" value="<?=isset($arr_data['list_sb_header']['person']) ? $arr_data['list_sb_header']['person'] : ''?>">
                             </th>
                             <th>
-                                <span id="info__tot__items"></span>
-                                <input type="hidden" id="info__tot__items_hid">
+                                <span id="info__tot__items"><?=isset($arr_data['list_sb_header']['item_amount']) ? $arr_data['list_sb_header']['item_amount'] : ''?></span>
+                                <input type="hidden" id="info__tot__items_hid" value="<?=isset($arr_data['list_sb_header']['item_amount']) ? $arr_data['list_sb_header']['item_amount'] : ''?>">
                             </th>
                             <th>
-                                <span id="info__tot__items_percent"></span>
-                                <input type="hidden" id="info__tot__items_percent_hid">
+                                <span id="info__tot__items_percent"><?=isset($arr_data['list_sb_header']['item_amount']) ? $arr_data['list_sb_header']['item_amount']/$arr_data['list_sb_header']['item_amount']*100 : ''?></span>
+                                <input type="hidden" id="info__tot__items_percent_hid" value="<?=isset($arr_data['list_sb_header']['item_amount']) ? $arr_data['list_sb_header']['item_amount']/$arr_data['list_sb_header']['item_amount']*100 : ''?>">
                             </th>
                             <th>
-                                <span id="info__tot__tax"></span>
-                                <input type="hidden" id="info__tot__tax_hid">
+                                <span id="info__tot__tax"><?=isset($arr_data['list_sb_header']['tax_amount']) ? $arr_data['list_sb_header']['tax_amount'] : ''?></span>
+                                <input type="hidden" id="info__tot__tax_hid" value="<?=isset($arr_data['list_sb_header']['tax_amount']) ? $arr_data['list_sb_header']['tax_amount'] : ''?>">
                             </th>
                             <th>
-                                <span id="info__tot__discount"></span>
-                                <input type="hidden" id="info__tot__discount_hid">
+                                <span id="info__tot__discount"><?=isset($arr_data['list_sb_header']['discount_amount']) ? $arr_data['list_sb_header']['discount_amount'] : ''?></span>
+                                <input type="hidden" id="info__tot__discount_hid" value="<?=isset($arr_data['list_sb_header']['discount_amount']) ? $arr_data['list_sb_header']['discount_amount'] : ''?>">
                             </th>
                             <th>
-                                <span id="info__tot__delivery"></span>
-                                <input type="hidden" id="info__tot__delivery_hid">
+                                <span id="info__tot__delivery"><?=isset($arr_data['list_sb_header']['delivery_amount']) ? $arr_data['list_sb_header']['delivery_amount'] : ''?></span>
+                                <input type="hidden" id="info__tot__delivery_hid" value="<?=isset($arr_data['list_sb_header']['delivery_amount']) ? $arr_data['list_sb_header']['delivery_amount'] : ''?>">
                             </th>
                             <th>
-                                <span id="info__tot__other"></span>
-                                <input type="hidden" id="info__tot__other_hid">
+                                <span id="info__tot__other"><?=isset($arr_data['list_sb_header']['other_amount']) ? $arr_data['list_sb_header']['other_amount'] : ''?></span>
+                                <input type="hidden" id="info__tot__other_hid" value="<?=isset($arr_data['list_sb_header']['other_amount']) ? $arr_data['list_sb_header']['other_amount'] : ''?>">
                             </th>
                             <th>
-                                <span id="info__tot__adjustment"></span>
-                                <input type="hidden" id="info__tot__adjustment_hid">
+                                <span id="info__tot__adjustment"><?=isset($arr_data['list_sb_header']['adjustment_amount']) ? $arr_data['list_sb_header']['adjustment_amount'] : ''?></span>
+                                <input type="hidden" id="info__tot__adjustment_hid" value="<?=isset($arr_data['list_sb_header']['adjustment_amount']) ? $arr_data['list_sb_header']['adjustment_amount'] : ''?>">
                             </th>
                             <th>
-                                <span id="info__tot__total"></span>
-                                <input type="hidden" id="info__tot__total_hid">
+                                <span id="info__tot__total"><?=isset($arr_data['list_sb_header']['item_amount']) ? $arr_data['list_sb_header']['item_amount']+$arr_data['list_sb_header']['tax_amount']-$arr_data['list_sb_header']['discount_amount']+$arr_data['list_sb_header']['delivery_amount']+$arr_data['list_sb_header']['other_amount']+$arr_data['list_sb_header']['adjustment_amount'] : ''?></span>
+                                <input type="hidden" id="info__tot__total_hid" value="<?=isset($arr_data['list_sb_header']['item_amount']) ? $arr_data['list_sb_header']['item_amount']+$arr_data['list_sb_header']['tax_amount']-$arr_data['list_sb_header']['discount_amount']+$arr_data['list_sb_header']['delivery_amount']+$arr_data['list_sb_header']['other_amount']+$arr_data['list_sb_header']['adjustment_amount'] : ''?>">
                             </th>
                         </tr>
                         <?php
@@ -1626,7 +1630,7 @@ elseif($page == 'split_bill_add_edit')
                                                 foreach($arr_data['list_person'] as $person_id => $val)
                                                 {
                                                 ?>
-                                                    <option value="<?=$person_id?>"<?=isset($arr_data['list_save_sb'][$x]['person_id']) ? ' selected' : ''?>><?=$val['name']?></option>
+                                                    <option value="<?=$person_id?>"<?=isset($arr_data['list_sb_details'][$x]['person_id']) && $arr_data['list_sb_details'][$x]['person_id'] == $person_id ? ' selected' : ''?>><?=$val['name']?></option>
                                                 <?php
                                                 }
                                             }
@@ -1655,8 +1659,8 @@ elseif($page == 'split_bill_add_edit')
                                             document.getElementById(\'input__'.$x.'__items_amount_panel_tgg\').value = 0;
                                         ';
                                     ?>
-                                    <button onclick="<?=$js?>" type="button" id="input__<?=$x?>__items_amount_show"><?=isset($arr_data['list_save_sb'][$x]['items_amount']) ? $arr_data['list_save_sb'][$x]['items_amount'] : 0?></button>
-                                    <input class="data__loop" type="hidden" name="sb_list[<?=$x?>][items]" id="input__<?=$x?>__items_amount" value="<?=isset($arr_data['list_save_sb'][$x]['items_amount']) ? $arr_data['list_save_sb'][$x]['items_amount'] : ''?>">   
+                                    <button onclick="<?=$js?>" type="button" id="input__<?=$x?>__items_amount_show"><?=isset($arr_data['list_sb_details'][$x]['item_amount']) ? $arr_data['list_sb_details'][$x]['item_amount'] : 0?></button>
+                                    <input class="data__loop" type="hidden" name="sb_list[<?=$x?>][items]" id="input__<?=$x?>__items_amount" value="<?=isset($arr_data['list_sb_details'][$x]['item_amount']) ? $arr_data['list_sb_details'][$x]['item_amount'] : ''?>">   
                                     <input type="hidden" id="input__<?=$x?>__items_amount_panel_tgg" value="0">
                                     <div id="input__<?=$x?>__items_amount_panel" class="position-absolute bg-light-lighten" style="display:none;;">
                                         <div class="panel__menu" id="input__<?=$x?>__items_amount_panel_sub"></div>
@@ -1670,34 +1674,34 @@ elseif($page == 'split_bill_add_edit')
                                     </div>
                                 </td>
                                 <td>
-                                    <span id="input__<?=$x?>__items_percent"></span>
-                                    <input type="hidden" id="input__<?=$x?>__items_percent_hid" name="sb_list[<?=$x?>][items_percent]" value="">
+                                    <span id="input__<?=$x?>__items_percent"><?=isset($arr_data['list_sb_details'][$x]['item_amount']) ? $arr_data['list_sb_details'][$x]['item_amount']/$arr_data['list_sb_header']['item_amount']*100 : ''?></span>
+                                    <input type="hidden" id="input__<?=$x?>__items_percent_hid" name="sb_list[<?=$x?>][items_percent]" value="<?=isset($arr_data['list_sb_details'][$x]['item_amount']) ? $arr_data['list_sb_details'][$x]['item_amount']/$arr_data['list_sb_header']['item_amount']*100 : ''?>">
                                 </td>
                                 <td>
-                                    <span id="input__<?=$x?>__items_tax"></span>
-                                    <input type="hidden" id="input__<?=$x?>__items_tax_hid" name="sb_list[<?=$x?>][tax]" value="">
+                                    <span id="input__<?=$x?>__items_tax"><?=isset($arr_data['list_sb_details'][$x]['tax_amount']) ? $arr_data['list_sb_details'][$x]['tax_amount'] : ''?></span>
+                                    <input type="hidden" id="input__<?=$x?>__items_tax_hid" name="sb_list[<?=$x?>][tax]" value="<?=isset($arr_data['list_sb_details'][$x]['tax_amount']) ? $arr_data['list_sb_details'][$x]['tax_amount'] : ''?>">
                                 </td>
                                 <td>
-                                    <span id="input__<?=$x?>__items_discount"></span>
-                                    <input type="hidden" id="input__<?=$x?>__items_discount_hid" name="sb_list[<?=$x?>][discount]" value="">
+                                    <span id="input__<?=$x?>__items_discount"><?=isset($arr_data['list_sb_details'][$x]['discount_amount']) ? $arr_data['list_sb_details'][$x]['discount_amount'] : ''?></span>
+                                    <input type="hidden" id="input__<?=$x?>__items_discount_hid" name="sb_list[<?=$x?>][discount]" value="<?=isset($arr_data['list_sb_details'][$x]['discount_amount']) ? $arr_data['list_sb_details'][$x]['discount_amount'] : ''?>">
                                 </td>
                                 <td>
-                                    <span id="input__<?=$x?>__items_delivery"></span>
-                                    <input type="hidden" id="input__<?=$x?>__items_delivery_hid" name="sb_list[<?=$x?>][delivery]" value="">
+                                    <span id="input__<?=$x?>__items_delivery"><?=isset($arr_data['list_sb_details'][$x]['delivery_amount']) ? $arr_data['list_sb_details'][$x]['delivery_amount'] : ''?></span>
+                                    <input type="hidden" id="input__<?=$x?>__items_delivery_hid" name="sb_list[<?=$x?>][delivery]" value="<?=isset($arr_data['list_sb_details'][$x]['delivery_amount']) ? $arr_data['list_sb_details'][$x]['delivery_amount'] : ''?>">
                                 </td>
                                 <td>
-                                    <span id="input__<?=$x?>__items_other"></span>
-                                    <input type="hidden" id="input__<?=$x?>__items_other_hid" name="sb_list[<?=$x?>][other]" value="">
+                                    <span id="input__<?=$x?>__items_other"><?=isset($arr_data['list_sb_details'][$x]['other_amount']) ? $arr_data['list_sb_details'][$x]['other_amount'] : ''?></span>
+                                    <input type="hidden" id="input__<?=$x?>__items_other_hid" name="sb_list[<?=$x?>][other]" value="<?=isset($arr_data['list_sb_details'][$x]['other_amount']) ? $arr_data['list_sb_details'][$x]['other_amount'] : ''?>">
                                 </td>
                                 <td>
-                                    <input type="text" id="input__<?=$x?>__items_adjustment" name="sb_list[<?=$x?>][adjustment]" value="">
+                                    <input type="text" id="input__<?=$x?>__items_adjustment" name="sb_list[<?=$x?>][adjustment]" value="<?=isset($arr_data['list_sb_details'][$x]['adjustment_amount']) ? $arr_data['list_sb_details'][$x]['adjustment_amount'] : ''?>">
                                 </td>
                                 <td>
-                                    <span id="input__<?=$x?>__items_total"></span>
-                                    <input type="hidden" id="input__<?=$x?>__items_total_hid" name="sb_list[<?=$x?>][total]" value="">
+                                    <span id="input__<?=$x?>__items_total"><?=isset($arr_data['list_sb_details'][$x]['item_amount']) ? $arr_data['list_sb_details'][$x]['item_amount']+$arr_data['list_sb_details'][$x]['tax_amount']-$arr_data['list_sb_details'][$x]['discount_amount']+$arr_data['list_sb_details'][$x]['delivery_amount']+$arr_data['list_sb_details'][$x]['other_amount']+$arr_data['list_sb_details'][$x]['adjustment_amount'] : ''?></span>
+                                    <input type="hidden" id="input__<?=$x?>__items_total_hid" name="sb_list[<?=$x?>][total]" value="<?=isset($arr_data['list_sb_details'][$x]['item_amount']) ? $arr_data['list_sb_details'][$x]['item_amount']+$arr_data['list_sb_details'][$x]['tax_amount']-$arr_data['list_sb_details'][$x]['discount_amount']+$arr_data['list_sb_details'][$x]['delivery_amount']+$arr_data['list_sb_details'][$x]['other_amount']+$arr_data['list_sb_details'][$x]['adjustment_amount'] : ''?>">
                                 </td>
                                 <td>
-                                    <textarea id="input__<?=$x?>__items_remarks" name="sb_list[<?=$x?>][remarks]"></textarea>
+                                    <textarea id="input__<?=$x?>__items_remarks" name="sb_list[<?=$x?>][remarks]"><?=isset($arr_data['list_sb_details'][$x]['remarks']) ? $arr_data['list_sb_details'][$x]['remarks'] : ''?></textarea>
                                 </td>
                             </tr>
                         <?php
