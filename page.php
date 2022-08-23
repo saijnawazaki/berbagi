@@ -1674,7 +1674,7 @@ elseif($page == 'split_bill_add_edit')
                                     </div>
                                 </td>
                                 <td>
-                                    <span id="input__<?=$x?>__items_percent"><?=isset($arr_data['list_sb_details'][$x]['item_amount']) ? $arr_data['list_sb_details'][$x]['item_amount']/$arr_data['list_sb_header']['item_amount']*100 : ''?></span>
+                                    <span id="input__<?=$x?>__items_percent"><?=isset($arr_data['list_sb_details'][$x]['item_amount']) ? round($arr_data['list_sb_details'][$x]['item_amount']/$arr_data['list_sb_header']['item_amount']*100,2) : ''?></span>
                                     <input type="hidden" id="input__<?=$x?>__items_percent_hid" name="sb_list[<?=$x?>][items_percent]" value="<?=isset($arr_data['list_sb_details'][$x]['item_amount']) ? $arr_data['list_sb_details'][$x]['item_amount']/$arr_data['list_sb_header']['item_amount']*100 : ''?>">
                                 </td>
                                 <td>
@@ -1862,6 +1862,245 @@ elseif($page == 'split_bill_add_edit')
                 document.getElementById('info__tot__total_hid').value = sub_tot_user_total;
             }
         </script>
+    </div>
+<?php    
+}
+elseif($page == 'payment')
+{
+    $g_book_id = isset($_GET['book_id']) ? $_GET['book_id'] : 0;
+    
+    if(! preg_match('/^[0-9]*$/', $g_book_id)) 
+    {
+        die('Book ID Invalid');        
+    }
+    
+    if($g_book_id > 0)
+    {
+        $query = "
+            select
+                *
+            from
+                book
+            where
+                book_id = '".$g_book_id."'
+        ";
+        $result = $db->query($query);    
+        $data = $result->fetchArray();
+        
+        if($data['user_id'] != $ses['user_id'])
+        {
+            die('Book not yours!');    
+        }
+    }
+    
+    $arr_data['list'] = array();
+    $query = "
+        select
+            payment.*,
+            person.person_name
+        from
+            payment
+        inner join
+            person
+            on person.person_id = payment.person_id
+        where
+            payment.book_id = '".$g_book_id."'
+        order by
+            payment.payment_date DESC,
+            payment.created_at DESC
+    ";
+    //echo "<pre>$query</pre>";
+    $result = $db->query($query) or die('ERROR|WQIEHQUIWEHUIQWHEUQWE');    
+    
+    while($row = $result->fetchArray())
+    {
+        $arr_data['list'][$row['payment_date']][$row['payment_id']]['date'] = $row['payment_date'];    
+        $arr_data['list'][$row['payment_date']][$row['payment_id']]['payment_type_id'] = $row['payment_type_id'];    
+        $arr_data['list'][$row['payment_date']][$row['payment_id']]['amount'] = $row['amount'];    
+        $arr_data['list'][$row['payment_date']][$row['payment_id']]['remarks'] = $row['remarks'];    
+    }
+?>
+    <div class="container">
+        <h1>
+            <a href="<?=APP_URL.'?page=home'?>">
+                <svg id="i-chevron-left" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentcolor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2">
+                    <path d="M20 30 L8 16 20 2" />
+                </svg>
+            
+                Payment
+            </a>
+        </h1>
+        <hr>
+        <div class="text-right">
+            <a href="<?=APP_URL.'?page=payment_add_edit&payment_id_id=0&book_id='.$g_book_id?>" class="button bg-success color-white">New</a>
+        </div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Person</th>
+                    <th>Type</th>
+                    <th>Amount</th>
+                    <th>Remarks</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php
+                    if(count($arr_data['list']) == 0)
+                    {
+                    ?>
+                        <tr>
+                            <td colspan="100">No Data</td>
+                        </tr> 
+                    <?php
+                    }
+                    else
+                    {
+                        foreach($arr_data['list'] as $payment_date => $val)
+                        {
+                            $payment_date_show = date('d-m-Y',$payment_date);
+                            foreach($arr_data['list'][$payment_date] as $payment_id => $val)
+                            {
+                            ?>
+                                <tr>
+                                    <td><?=$payment_date_show?></td>
+                                    <td><?=$val['person_name']?> </td>
+                                    <td><?=($val['payment_type_id'] == 1 ? 'Debit' : 'Kredit')?> </td>
+                                    <td><?=$val['amount']?> </td>
+                                    <td><?=$val['remarks']?> </td>
+                                    <td>
+                                        <a class="button bg-warning" href="<?=APP_URL.'?page=payment_add_edit&book_id='.$g_book_id.'&payment_id='.$payment_id?>">Edit</a>
+                                        </a>
+                                    </td>
+                                </tr>
+                            <?php
+                                $invoice_date_show = '';    
+                            }    
+                        }
+                            
+                        
+                    }
+                ?>
+            </tbody>  
+        </table>
+    </div>
+<?php    
+}
+elseif($page == 'payment_add_edit')
+{
+    $g_payment_id = isset($_GET['payment_id']) ? $_GET['payment_id'] : 0;
+    $g_book_id = isset($_GET['book_id']) ? $_GET['book_id'] : 0;
+    
+    if(! preg_match('/^[0-9]*$/', $g_restaurant_id)) 
+    {
+        die('Restaurant ID Invalid');        
+    }
+             
+    if(! preg_match('/^[0-9]*$/', $g_book_id)) 
+    {
+        die('Book ID Invalid');        
+    }
+    
+    if($g_book_id > 0)
+    {
+        $query = "
+            select
+                *
+            from
+                book
+            where
+                book_id = '".$g_book_id."'
+        ";
+        $result = $db->query($query);    
+        $data = $result->fetchArray();
+        
+        if($data['user_id'] != $ses['user_id'])
+        {
+            die('Book not yours!');    
+        }
+    }
+    
+    if($g_payment_id > 0)
+    {
+        $query = "
+            select
+                *
+            from
+                payment
+            where
+                payment_id = '".$g_payment_id."'
+        ";
+        $result = $db->query($query);    
+        $data = $result->fetchArray();
+    }
+    
+    //load person
+    $query = "
+        select
+            *
+        from
+            person
+        order by
+            person_name ASC
+    ";
+    $result = $db->query($query);
+    $arr_data['list_person'] = array();
+    while($row = $result->fetchArray())
+    {
+        $arr_data['list_person'][$row['person_id']]['name'] = $row['initial_name'].' - '.$row['person_name'];    
+    }
+?>
+    <div class="container">
+        <h1>
+            <a href="<?=APP_URL.'?page=payment&book_id='.$g_book_id?>">
+                <svg id="i-chevron-left" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentcolor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2">
+                    <path d="M20 30 L8 16 20 2" />
+                </svg>
+            Payment
+            </a>
+            <svg id="i-chevron-right" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentcolor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2">
+                <path d="M12 30 L24 16 12 2" />
+            </svg>
+            Add / Edit
+        </h1>
+        <hr>
+        <div class="row">
+            <div class="col-12 col-lg-4">
+                <form method="post" action="<?=APP_URL?>?page=restaurant_add_edit&restaurant_id=<?=$g_restaurant_id?>" accept-charset="utf-8">
+                    <label>Payment Date</label>
+                    <input type="date" name="sb_date" value="<?=isset($data['payment_date']) ? date('Y-m-d',$data['payment_date']) : date('Y-m-d')?>">
+                    <label>Payment Type</label>
+                    <select>
+                        <option value="1"<?=isset($data['payment_type_id']) && $data['payment_type_id'] == 1 ? ' selected' : ''?>>Debit</option>
+                        <option value="2"<?=isset($data['payment_type_id']) && $data['payment_type_id'] == 2 ? ' selected' : ''?>>Kredit</option>
+                    </select>
+                    <label>Person</label>
+                    <select>
+                        <option value="0">-</option>
+                        <?php
+                            foreach($arr_data['list_person'] as $person_id => $value)
+                            {
+                            ?>
+                                <option value="1"<?=isset($data['person_id']) && $data['person_id'] == $person_id ? ' selected' : ''?>><?=$value['name']?></option>
+                        
+                            <?php    
+                            }    
+                        ?>
+                    </select>     
+                    <label>Amount</label>
+                    <input type="text" name="amount" value="<?=isset($data['amount']) ? $data['amount'] : ''?>">
+                    <label>Remarks</label>
+                    <input type="text" name="remarks" value="<?=isset($data['remarks']) ? $data['remarks'] : ''?>">
+                    
+                    <hr>
+                    <input type="hidden" name="payment_id" value="<?=$g_payment_id?>">
+                    <input type="hidden" name="book_id" value="<?=$g_book_id?>">
+                    <input type="submit" name="submit" class="bg-primary color-white" value="Submit">
+                </form>   
+            </div>
+            
+        </div>
     </div>
 <?php    
 }
