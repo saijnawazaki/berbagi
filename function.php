@@ -6,3 +6,8 @@ function parsedate($string)
 
 	return $ut;
 }
+
+function parsenumber($number,$decimal = 2)
+{
+    return number_format($number,$decimal,',','.');
+}

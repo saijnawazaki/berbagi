@@ -832,6 +832,90 @@ if($_SERVER['REQUEST_METHOD'] === 'POST')
             die();
         }
     }
+    elseif($page == 'payment_add_edit')
+    {
+        if(isset($_POST['submit']))
+        {
+            $payment_id = (int) $_POST['payment_id'];    
+            $book_id = (int) $_POST['book_id'];    
+            $payment_date = parsedate($_POST['payment_date']);    
+            $payment_type_id = (int) $_POST['payment_type_id'];    
+            $amount = (int) $_POST['amount'];    
+            $remarks = htmlentities($_POST['remarks']);    
+            $person_id = (int) $_POST['person_id'];
+            $_SESSION['mess'] = '';
+            
+            if($_SESSION['mess'] == '')
+            {
+                if($payment_id == 0)
+                {
+                    //New
+                    $query = "select max(payment_id) as last_id from payment";
+                    $result = $db->query($query);
+                    $data = $result->fetchArray();
+                    $final_id = ((int) $data['last_id'])+1;
+                    
+                    $query = "
+                        insert into
+                            payment
+                            (
+                                payment_id,
+                                book_id,
+                                payment_date,
+                                payment_type_id,
+                                person_id,
+                                amount,
+                                remarks,
+                                status_id,
+                                created_by,
+                                created_at
+                            )
+                        values
+                            (
+                                '".$final_id."',
+                                '".$book_id."',
+                                '".$payment_date."',
+                                '".$payment_type_id."',
+                                '".$person_id."',
+                                '".$amount."',
+                                '".$remarks."',
+                                '1',
+                                '".$ses['user_id']."',
+                                '".time()."'
+                            )
+                    ";
+                }
+                else
+                {
+                    $final_id = $payment_id;
+                    $query = "
+                        UPDATE
+                            payment
+                        SET
+                            payment_date = '".$payment_date."',
+                            payment_type_id = '".$payment_type_id."',
+                            person_id = '".$person_id."',
+                            amount = '".$amount."',
+                            remarks = '".$remarks."'
+                        WHERE
+                            payment_id = '".$final_id."'
+                    ";
+                }
+                
+                if($db->query($query))
+                {
+                    $_SESSION['mess'] .= 'Added Successfully';
+                    header('location: '.APP_URL.'?page=payment_add_edit&payment_id='.$final_id.'&book_id='.$book_id); 
+                }
+                else
+                {
+                    $_SESSION['mess'] .= 'Added Failed';
+                  
+                }    
+            }
+                    
+        }    
+    }
     else
     {
         header('location: '.APP_URL.'?page=fatal_error');

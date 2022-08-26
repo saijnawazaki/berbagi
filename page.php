@@ -2069,14 +2069,14 @@ elseif($page == 'payment_add_edit')
             <div class="col-12 col-lg-4">
                 <form method="post" action="<?=APP_URL?>?page=restaurant_add_edit&restaurant_id=<?=$g_restaurant_id?>" accept-charset="utf-8">
                     <label>Payment Date</label>
-                    <input type="date" name="sb_date" value="<?=isset($data['payment_date']) ? date('Y-m-d',$data['payment_date']) : date('Y-m-d')?>">
+                    <input type="date" name="payment_date" value="<?=isset($data['payment_date']) ? date('Y-m-d',$data['payment_date']) : date('Y-m-d')?>">
                     <label>Payment Type</label>
-                    <select>
+                    <select name="payment_type_id">
                         <option value="1"<?=isset($data['payment_type_id']) && $data['payment_type_id'] == 1 ? ' selected' : ''?>>Debit</option>
                         <option value="2"<?=isset($data['payment_type_id']) && $data['payment_type_id'] == 2 ? ' selected' : ''?>>Kredit</option>
                     </select>
                     <label>Person</label>
-                    <select>
+                    <select name="person_id">
                         <option value="0">-</option>
                         <?php
                             foreach($arr_data['list_person'] as $person_id => $value)
@@ -2103,4 +2103,258 @@ elseif($page == 'payment_add_edit')
         </div>
     </div>
 <?php    
+}
+elseif($page == 'summary')
+{
+    $g_book_id = isset($_GET['book_id']) ? $_GET['book_id'] : 0;
+    
+    if(! preg_match('/^[0-9]*$/', $g_book_id)) 
+    {
+        die('Book ID Invalid');        
+    }
+    
+    if($g_book_id > 0)
+    {
+        $query = "
+            select
+                *
+            from
+                book
+            where
+                book_id = '".$g_book_id."'
+        ";
+        $result = $db->query($query);    
+        $data = $result->fetchArray();
+        
+        if($data['user_id'] != $ses['user_id'])
+        {
+            die('Book not yours!');    
+        }
+    }
+    
+    //load person
+    $query = "
+        select
+            *
+        from
+            person
+        order by
+            person_name ASC
+    ";
+    $result = $db->query($query);
+    $arr_data['list_person'] = array();
+    while($row = $result->fetchArray())
+    {
+        $arr_data['list_person'][$row['person_id']]['name'] = $row['initial_name'].' - '.$row['person_name'];
+            
+    }
+    
+    ?>
+    <form method="get" action="<?=APP_URL?>" accept-charset="utf-8">
+        <table>
+            <tr>
+                <th colspan="100">Summary</th>
+            </tr>
+            <tr>
+                <td>Type Report</td>
+                <td>
+                    <select name="v_type_report" id="v_type_report">
+                        <option value="summary_per_person"<?=isset($_GET['v_type_report']) && $_GET['v_type_report'] == 'summary_per_person' ? ' selected' : ''?>>Summary Per Person</option>
+                        <option value="details_per_person_date"<?=isset($_GET['v_type_report']) && $_GET['v_type_report'] == 'details_per_person_date' ? ' selected' : ''?>>Details Per Person Date</option>
+                    </select>
+                </td>
+            </tr>
+            <tr>
+                <td>Date From</td>
+                <td>
+                    <input type="date" name="v_date_from" value="<?=isset($_GET['v_date_from']) ? $_GET['v_date_from'] : date('Y-m-d')?>">
+                </td>
+            </tr>
+            <tr>
+                <td>Date To</td>
+                <td>
+                    <input type="date" name="v_date_to" value="<?=isset($_GET['v_date_to']) ? $_GET['v_date_to'] : date('Y-m-d')?>">
+                </td>
+            </tr>
+            <tr>
+                <td>Person</td>
+                <td>
+                    <select name="v_person_id" multiple="">
+                        <option value="all"<?=(isset($_GET['v_person_id']) && in_array('all',$_GET['v_person_id']) ? ' selected' : '')?>>All</option>
+                        <?php
+                        foreach($arr_data['list_person'] as $person_id => $value)
+                        {
+                        ?>
+                            <option value="<?=$person_id?>"<?=(isset($_GET['v_person_id']) && in_array($person_id,$_GET['v_person_id']) ? ' selected' : '')?>><?=$value['name'].' :: '.$person_id?></option>
+                        <?php
+                        }
+                        ?>
+                    </select>
+                </td>
+            </tr>
+            <tr>
+                <th colspan="100">
+                    <input type="hidden" name="book_id" value="<?=$g_book_id?>">
+                    <input type="hidden" name="page" value="<?=$page?>">
+                    <input type="submit" name="v_show" value="Show">
+                </th>
+            </tr>
+        </table>
+        <?php
+            if(isset($_GET['v_show']))
+            {
+                $v_type_report = trim($_GET['v_type_report']);
+                $v_date_from = parsedate($_GET['v_date_from']);
+                $v_date_to = parsedate($_GET['v_date_to']);
+                $v_person_id = isset($_GET['v_person_id']) ? $_GET['v_person_id'] : array();
+                $book_id = (int) $_GET['book_id'];
+                $page = trim($_GET['page']);
+                
+                if($v_type_report == 'summary_per_person')
+                {
+                    $arr_data['data_loop'] = array();
+                    
+                    $arr_data['split_bill_details'] = array();
+                    $arr_data['payment'] = array();
+                    foreach($arr_data['list_person'] as $person_id => $value)
+                    {
+                        $arr_data['split_bill_details'][$person_id]['item_amount'] = 0;    
+                        $arr_data['split_bill_details'][$person_id]['tax_amount'] = 0;    
+                        $arr_data['split_bill_details'][$person_id]['discount_amount'] = 0;    
+                        $arr_data['split_bill_details'][$person_id]['delivery_amount'] = 0;    
+                        $arr_data['split_bill_details'][$person_id]['other_amount'] = 0;    
+                        $arr_data['split_bill_details'][$person_id]['adjustment_amount'] = 0;
+                        $arr_data['payment'][$person_id][1]['amount'] = 0;    
+                        $arr_data['payment'][$person_id][2]['amount'] = 0;
+                        $arr_data['data_loop'][$person_id]['data'] = 0;
+                        $arr_data['data_loop'][$person_id]['total'] = 0;
+                        $arr_data['data_loop'][$person_id]['item_amount'] = 0;
+                        $arr_data['data_loop'][$person_id]['tax_amount'] = 0;
+                        $arr_data['data_loop'][$person_id]['discount_amount'] = 0;
+                        $arr_data['data_loop'][$person_id]['delivery_amount'] = 0;
+                        $arr_data['data_loop'][$person_id]['other_amount'] = 0;
+                        $arr_data['data_loop'][$person_id]['adjustment_amount'] = 0;    
+                        $arr_data['data_loop'][$person_id]['person_name'] = $value['name'];    
+                    }
+                     
+                    //Load Split BIll
+                    $query = "
+                        select
+                            *
+                        from
+                            split_bill_details
+                    ";
+                    $result = $db->query($query);
+                    
+                    while($row = $result->fetchArray())
+                    {
+                        $arr_data['data_loop'][$row['person_id']]['data'] = 1;
+
+                        $arr_data['split_bill_details'][$row['person_id']]['item_amount'] += $row['item_amount'];    
+                        $arr_data['split_bill_details'][$row['person_id']]['tax_amount'] += $row['tax_amount'];    
+                        $arr_data['split_bill_details'][$row['person_id']]['discount_amount'] += $row['discount_amount'];    
+                        $arr_data['split_bill_details'][$row['person_id']]['delivery_amount'] += $row['delivery_amount'];    
+                        $arr_data['split_bill_details'][$row['person_id']]['other_amount'] += $row['other_amount'];    
+                        $arr_data['split_bill_details'][$row['person_id']]['adjustment_amount'] += $row['adjustment_amount'];    
+                    }
+                    
+                    //Load Payment
+                    $query = "
+                        select
+                            *
+                        from
+                            payment
+                    ";
+                    $result = $db->query($query);
+                    
+                    while($row = $result->fetchArray())
+                    {
+                        $arr_data['data_loop'][$row['person_id']]['data'] = 1;
+                        
+                        $arr_data['payment'][$row['person_id']][$row['payment_type_id']]['amount'] += $row['amount'];    
+                    }
+                    
+                    //Calc
+                    foreach($arr_data['data_loop'] as $person_id => $value)
+                    {
+                        $total_amount = 0;
+                        //split_bill_details
+                        $total_amount += $arr_data['split_bill_details'][$person_id]['item_amount'];   
+                        $total_amount += $arr_data['split_bill_details'][$person_id]['tax_amount'];   
+                        $total_amount -= $arr_data['split_bill_details'][$person_id]['discount_amount'];   
+                        $total_amount += $arr_data['split_bill_details'][$person_id]['delivery_amount'];   
+                        $total_amount += $arr_data['split_bill_details'][$person_id]['other_amount'];   
+                        $total_amount += $arr_data['split_bill_details'][$person_id]['adjustment_amount'];
+                        $pure_sb = $total_amount;    
+                        $total_amount -= $arr_data['payment'][$person_id][1]['amount'];   
+                        $total_amount += $arr_data['payment'][$person_id][2]['amount'];
+                        
+                        $arr_data['data_loop'][$person_id]['item_amount'] = $arr_data['split_bill_details'][$person_id]['item_amount'];   
+                        $arr_data['data_loop'][$person_id]['tax_amount'] = $arr_data['split_bill_details'][$person_id]['tax_amount'];   
+                        $arr_data['data_loop'][$person_id]['discount_amount'] = $arr_data['split_bill_details'][$person_id]['discount_amount'];   
+                        $arr_data['data_loop'][$person_id]['delivery_amount'] = $arr_data['split_bill_details'][$person_id]['delivery_amount'];   
+                        $arr_data['data_loop'][$person_id]['other_amount'] = $arr_data['split_bill_details'][$person_id]['other_amount'];   
+                        $arr_data['data_loop'][$person_id]['adjustment_amount'] = $arr_data['split_bill_details'][$person_id]['adjustment_amount'];   
+                        $arr_data['data_loop'][$person_id]['total_sb'] = $pure_sb;   
+                        $arr_data['data_loop'][$person_id]['total_payment'] = $arr_data['payment'][$person_id][1]['amount']+$arr_data['payment'][$person_id][2]['amount'];   
+                        $arr_data['data_loop'][$person_id]['total'] = $total_amount;   
+                    }
+                    
+                    //print('<pre>'.print_r($arr_data['data_loop'],true).'</pre>');
+                    ?>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Item</th>
+                                <th>Tax</th>
+                                <th>Discount</th>
+                                <th>Delivery</th>
+                                <th>Other</th>
+                                <th>Adjustment</th>
+                                <th>Total</th>
+                                <th>Pay</th>
+                                <th>Remaining</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        <?php
+                            if(count($arr_data['data_loop']) == 0)
+                            {
+                            ?>
+                                <tr>
+                                    <td colspan="100">No Data</td>
+                                </tr>
+                            <?php
+                            }
+                            else
+                            {
+                                foreach($arr_data['data_loop'] as $person_id => $value)
+                                {
+                                ?>
+                                    <tr>
+                                        <td><?=$value['person_name'].' :: '.$person_id?></td>
+                                        <td class="text-right"><?=parsenumber($value['item_amount'],2)?></td>
+                                        <td class="text-right"><?=parsenumber($value['tax_amount'],2)?></td>
+                                        <td class="text-right"><?=parsenumber($value['discount_amount'],2)?></td>
+                                        <td class="text-right"><?=parsenumber($value['delivery_amount'],2)?></td>
+                                        <td class="text-right"><?=parsenumber($value['other_amount'],2)?></td>
+                                        <td class="text-right"><?=parsenumber($value['adjustment_amount'],2)?></td>
+                                        <td class="text-right"><?=parsenumber($value['total_sb'],2)?></td>
+                                        <td class="text-right"><?=parsenumber($value['total_payment'],2)?></td>
+                                        <td class="text-right"><?=parsenumber($value['total'],2)?></td>
+                                    </tr>
+                                <?php    
+                                }
+                            }
+                        ?>
+                        </tbody>
+                    </table>
+                    <?php            
+                }
+            }
+        ?>
+    </form>
+    <?php
+        
 }
