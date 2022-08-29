@@ -114,8 +114,17 @@ if($_SERVER['REQUEST_METHOD'] === 'POST')
                 
                 if($db->query($query))
                 {
-                    $_SESSION['mess'] .= 'Added Successfully';
-                    header('location: '.APP_URL.'?page=book_add_edit&book_id='.$final_book_id); 
+                    if($book_id == 0)
+                    {
+                        $_SESSION['mess'] .= 'Add Successfully';
+                        header('location: '.APP_URL.'?page=book');    
+                    }
+                    else
+                    {
+                        $_SESSION['mess'] .= 'Update Successfully';
+                        header('location: '.APP_URL.'?page=book_add_edit&book_id='.$final_book_id);
+                    }
+                     
                 }
                 else
                 {
@@ -133,7 +142,7 @@ if($_SERVER['REQUEST_METHOD'] === 'POST')
             $name = isset($_POST['restaurant_name']) ? $_POST['restaurant_name'] : '';    
             $restaurant_id = isset($_POST['restaurant_id']) ? $_POST['restaurant_id'] : '';
             $_SESSION['mess'] = '';
-            if(! preg_match('/^[a-zA-Z0-9-_ ]{1,50}$/', $name)) 
+            if(! preg_match('/^[a-zA-Z0-9-_ ]{1,80}$/', $name)) 
             {
                 $_SESSION['mess'] .= 'Name Invalid<br>';        
             }
@@ -192,8 +201,16 @@ if($_SERVER['REQUEST_METHOD'] === 'POST')
                 
                 if($db->query($query))
                 {
-                    $_SESSION['mess'] .= 'Added Successfully';
-                    header('location: '.APP_URL.'?page=restaurant_add_edit&restaurant_id='.$final_restaurant_id); 
+                    if($restaurant_id == 0)
+                    {
+                        $_SESSION['mess'] .= 'Add Successfully';
+                        header('location: '.APP_URL.'?page=restaurant');    
+                    }
+                    else
+                    {
+                        $_SESSION['mess'] .= 'Update Successfully';
+                        header('location: '.APP_URL.'?page=restaurant_add_edit&restaurant_id='.$final_restaurant_id);
+                    }     
                 }
                 else
                 {
@@ -213,7 +230,7 @@ if($_SERVER['REQUEST_METHOD'] === 'POST')
             $rm_tag = isset($_POST['rm_tag']) ? $_POST['rm_tag'] : '';
             $rm_id = isset($_POST['rm_id']) ? $_POST['rm_id'] : '';
             $_SESSION['mess'] = '';
-            if(! preg_match('/^[a-zA-Z0-9-_ ]{1,50}$/', $name)) 
+            if(! preg_match('/^[a-zA-Z0-9-_+ ]{1,50}$/', $name)) 
             {
                 $_SESSION['mess'] .= 'Name Invalid<br>';        
             }
@@ -398,8 +415,17 @@ if($_SERVER['REQUEST_METHOD'] === 'POST')
                     
                     if($_SESSION['mess'] == '')
                     {
-                        $_SESSION['mess'] .= 'Added Successfully';
-                        header('location: '.APP_URL.'?page=restaurant_menu_add_edit&restaurant_id='.$restaurant_id.'&rm_id='.$final_id);    
+                        if($rm_id == 0) 
+                        {
+                            $_SESSION['mess'] .= 'Added Successfully';
+                            header('location: '.APP_URL.'?page=restaurant_menu&restaurant_id='.$restaurant_id);    
+                        }
+                        else
+                        {
+                            $_SESSION['mess'] .= 'Update Successfully';
+                            header('location: '.APP_URL.'?page=restaurant_menu_add_edit&restaurant_id='.$restaurant_id.'&rm_id='.$final_id);
+                        }
+                            
                     }
                     else
                     {
@@ -426,6 +452,7 @@ if($_SERVER['REQUEST_METHOD'] === 'POST')
             $person_name = isset($_POST['person_name']) ? $_POST['person_name'] : '';    
             $initial_name = isset($_POST['initial_name']) ? $_POST['initial_name'] : '';    
             $person_id = isset($_POST['person_id']) ? $_POST['person_id'] : '';
+            $remarks = isset($_POST['remarks']) ? trim($_POST['remarks']) : '';
             $_SESSION['mess'] = '';
             
             if(! preg_match('/^[a-zA-Z0-9-_ ]{1,50}$/', $person_name)) 
@@ -466,7 +493,8 @@ if($_SERVER['REQUEST_METHOD'] === 'POST')
                                 initial_name,
                                 status_id,
                                 created_by,
-                                created_at
+                                created_at,
+                                remarks
                             )
                         values
                             (
@@ -475,7 +503,8 @@ if($_SERVER['REQUEST_METHOD'] === 'POST')
                                 '".$initial_name."',
                                 '1',
                                 '".$ses['user_id']."',
-                                '".time()."'
+                                '".time()."',
+                                '".$remarks."'
                             )
                     ";
                 }
@@ -487,7 +516,8 @@ if($_SERVER['REQUEST_METHOD'] === 'POST')
                             person
                         SET
                             person_name = '".$person_name."',
-                            initial_name = '".$initial_name."'
+                            initial_name = '".$initial_name."',
+                            remarks = '".$remarks."'
                         WHERE
                             person_id = '".$final_id."'
                     ";
@@ -495,8 +525,16 @@ if($_SERVER['REQUEST_METHOD'] === 'POST')
                 
                 if($db->query($query))
                 {
-                    $_SESSION['mess'] .= 'Added Successfully';
-                    header('location: '.APP_URL.'?page=person_add_edit&person_id='.$final_id); 
+                    if($person_id == 0)
+                    {
+                        $_SESSION['mess'] .= 'Add Successfully';
+                        header('location: '.APP_URL.'?page=person');    
+                    }
+                    else
+                    {
+                        $_SESSION['mess'] .= 'Update Successfully';
+                        header('location: '.APP_URL.'?page=person_add_edit&person_id='.$final_id);
+                    } 
                 }
                 else
                 {
@@ -840,7 +878,7 @@ if($_SERVER['REQUEST_METHOD'] === 'POST')
             $book_id = (int) $_POST['book_id'];    
             $payment_date = parsedate($_POST['payment_date']);    
             $payment_type_id = (int) $_POST['payment_type_id'];    
-            $amount = (int) $_POST['amount'];    
+            $amount = (float) $_POST['amount'];    
             $remarks = htmlentities($_POST['remarks']);    
             $person_id = (int) $_POST['person_id'];
             $_SESSION['mess'] = '';
@@ -902,10 +940,22 @@ if($_SERVER['REQUEST_METHOD'] === 'POST')
                     ";
                 }
                 
+                //echo $query;
+                //print_r($_POST);
+                //die();
+                
                 if($db->query($query))
                 {
-                    $_SESSION['mess'] .= 'Added Successfully';
-                    header('location: '.APP_URL.'?page=payment_add_edit&payment_id='.$final_id.'&book_id='.$book_id); 
+                    if($payment_id == 0)
+                    {
+                        $_SESSION['mess'] .= 'Add Successfully';
+                        header('location: '.APP_URL.'?page=payment&&book_id='.$book_id);    
+                    }
+                    else
+                    {
+                        $_SESSION['mess'] .= 'Update Successfully';
+                        header('location: '.APP_URL.'?page=payment_add_edit&payment_id='.$final_id.'&book_id='.$book_id);
+                    } 
                 }
                 else
                 {
@@ -945,6 +995,36 @@ elseif($_SERVER['REQUEST_METHOD'] === 'GET')
             }
             else
             {
+                //load last price
+                $query = "
+                    select
+                        invoice_details.rm_id,
+                        invoice_details.price
+                    from
+                        invoice
+                    inner join
+                    (
+                        select
+                            restaurant_id,
+                            max(invoice_date) as invoice_date
+                        from
+                            invoice
+                        where
+                            restaurant_id = '".$restaurant_id."'        
+                    ) as res_max
+                    on res_max.invoice_date = invoice.invoice_date
+                    and res_max.restaurant_id = invoice.restaurant_id
+                    inner join
+                        invoice_details
+                        on invoice_details.invoice_id = invoice.invoice_id 
+                ";
+                $last_price = array();
+                $result = $db->query($query);
+                while($row = $result->fetchArray())
+                {
+                    $last_price[$row['rm_id']] = $row['price'];    
+                }
+                
                 $query = "
                     select
                         restaurant_menu.rm_id,
@@ -962,7 +1042,7 @@ elseif($_SERVER['REQUEST_METHOD'] === 'GET')
                     $res['data'][] = array(
                         'id' => $row['rm_id'],    
                         'name' => $row['rm_name'],    
-                        'last_price' => 9999,    
+                        'last_price' => isset($last_price[$row['rm_id']]) ? $last_price[$row['rm_id']]*1 : 0,    
                     );    
                 }
                 
