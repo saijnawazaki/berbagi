@@ -1918,11 +1918,12 @@ elseif($page == 'payment')
         $arr_data['list'][$row['payment_date']][$row['payment_id']]['payment_type_id'] = $row['payment_type_id'];    
         $arr_data['list'][$row['payment_date']][$row['payment_id']]['amount'] = $row['amount'];    
         $arr_data['list'][$row['payment_date']][$row['payment_id']]['remarks'] = $row['remarks'];    
+        $arr_data['list'][$row['payment_date']][$row['payment_id']]['person_name'] = $row['person_name'];    
     }
 ?>
     <div class="container">
         <h1>
-            <a href="<?=APP_URL.'?page=home'?>">
+            <a href="<?=APP_URL.'?page=book_details&book_id'.$g_book_id?>">
                 <svg id="i-chevron-left" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentcolor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2">
                     <path d="M20 30 L8 16 20 2" />
                 </svg>
@@ -1992,9 +1993,9 @@ elseif($page == 'payment_add_edit')
     $g_payment_id = isset($_GET['payment_id']) ? $_GET['payment_id'] : 0;
     $g_book_id = isset($_GET['book_id']) ? $_GET['book_id'] : 0;
     
-    if(! preg_match('/^[0-9]*$/', $g_restaurant_id)) 
+    if(! preg_match('/^[0-9]*$/', $g_payment_id)) 
     {
-        die('Restaurant ID Invalid');        
+        die('Payment ID Invalid');        
     }
              
     if(! preg_match('/^[0-9]*$/', $g_book_id)) 
@@ -2067,7 +2068,7 @@ elseif($page == 'payment_add_edit')
         <hr>
         <div class="row">
             <div class="col-12 col-lg-4">
-                <form method="post" action="<?=APP_URL?>?page=restaurant_add_edit&restaurant_id=<?=$g_restaurant_id?>" accept-charset="utf-8">
+                <form method="post" action="<?=APP_URL?>?page=payment_add_edit" accept-charset="utf-8">
                     <label>Payment Date</label>
                     <input type="date" name="payment_date" value="<?=isset($data['payment_date']) ? date('Y-m-d',$data['payment_date']) : date('Y-m-d')?>">
                     <label>Payment Type</label>
@@ -2150,7 +2151,25 @@ elseif($page == 'summary')
     }
     
     ?>
+    <div class="container">
+    <h1>
+        <a href="<?=APP_URL.'?page=book_details&book_id='.$g_book_id?>">
+            <svg id="i-chevron-left" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentcolor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2">
+                <path d="M20 30 L8 16 20 2" />
+            </svg>
+        Summary
+        </a>
+    </h1>
     <form method="get" action="<?=APP_URL?>" accept-charset="utf-8">
+        <?php
+        if(empty($_GET['v_type_report']))
+        {
+            $_GET['v_type_report'] = 'summary_per_person';    
+            $_GET['v_date_from'] = date('Y-m-d');    
+            $_GET['v_date_to'] = date('Y-m-d');    
+            $_GET['v_person_id'] = array('all');    
+        }
+        ?>
         <table>
             <tr>
                 <th colspan="100">Summary</th>
@@ -2160,7 +2179,7 @@ elseif($page == 'summary')
                 <td>
                     <select name="v_type_report" id="v_type_report">
                         <option value="summary_per_person"<?=isset($_GET['v_type_report']) && $_GET['v_type_report'] == 'summary_per_person' ? ' selected' : ''?>>Summary Per Person</option>
-                        <option value="details_per_person_date"<?=isset($_GET['v_type_report']) && $_GET['v_type_report'] == 'details_per_person_date' ? ' selected' : ''?>>Details Per Person Date</option>
+                        <option value="details_per_date"<?=isset($_GET['v_type_report']) && $_GET['v_type_report'] == 'details_per_date' ? ' selected' : ''?>>Details Per Date</option>
                     </select>
                 </td>
             </tr>
@@ -2179,7 +2198,7 @@ elseif($page == 'summary')
             <tr>
                 <td>Person</td>
                 <td>
-                    <select name="v_person_id" multiple="">
+                    <select name="v_person_id[]" multiple="">
                         <option value="all"<?=(isset($_GET['v_person_id']) && in_array('all',$_GET['v_person_id']) ? ' selected' : '')?>>All</option>
                         <?php
                         foreach($arr_data['list_person'] as $person_id => $value)
@@ -2209,6 +2228,27 @@ elseif($page == 'summary')
                 $v_person_id = isset($_GET['v_person_id']) ? $_GET['v_person_id'] : array();
                 $book_id = (int) $_GET['book_id'];
                 $page = trim($_GET['page']);
+
+                $where_person_id = '';
+
+                if(!in_array('all',$v_person_id))
+                {
+                    foreach($v_person_id as $person_id)
+                    {
+                        if($where_person_id != '')
+                        {
+                            $where_person_id .= ',';
+                        }
+
+                        $where_person_id .= "'".$person_id."'";
+                    }    
+                }
+
+                if($where_person_id != '')
+                {
+                    $where_person_id = "AND person.person_id in (".$where_person_id.")";
+                }
+                    
                 
                 if($v_type_report == 'summary_per_person')
                 {
@@ -2218,6 +2258,10 @@ elseif($page == 'summary')
                     $arr_data['payment'] = array();
                     foreach($arr_data['list_person'] as $person_id => $value)
                     {
+                        if(!in_array('all',$v_person_id) && !in_array($person_id,$v_person_id))
+                        {
+                            continue;
+                        }
                         $arr_data['split_bill_details'][$person_id]['item_amount'] = 0;    
                         $arr_data['split_bill_details'][$person_id]['tax_amount'] = 0;    
                         $arr_data['split_bill_details'][$person_id]['discount_amount'] = 0;    
@@ -2240,9 +2284,20 @@ elseif($page == 'summary')
                     //Load Split BIll
                     $query = "
                         select
-                            *
+                            split_bill_details.*
                         from
                             split_bill_details
+                        inner join
+                            split_bill
+                            on split_bill.sb_id = split_bill_details.sb_id
+                        inner join
+                            invoice
+                            on invoice.invoice_id = split_bill.invoice_id
+                            and invoice.book_id = '".$g_book_id."'
+                        inner join
+                            person
+                            on person.person_id = split_bill_details.person_id
+                            ".$where_person_id." 
                     ";
                     $result = $db->query($query);
                     
@@ -2264,6 +2319,12 @@ elseif($page == 'summary')
                             *
                         from
                             payment
+                        inner join
+                            person
+                            on person.person_id = payment.person_id
+                            ".$where_person_id." 
+                        where
+                            payment.book_id = '".$g_book_id."' 
                     ";
                     $result = $db->query($query);
                     
@@ -2352,9 +2413,134 @@ elseif($page == 'summary')
                     </table>
                     <?php            
                 }
+                elseif($v_type_report == 'details_per_date')
+                {
+                    $arr_data['data_loop'] = array();
+                    
+                    //Load Split BIll
+                    $query = "
+                        select
+                            split_bill_details.*,
+                            split_bill.created_at
+                        from
+                            split_bill_details
+                        inner join
+                            split_bill
+                            on split_bill.sb_id = split_bill_details.sb_id
+                        inner join
+                            invoice
+                            on invoice.invoice_id = split_bill.invoice_id
+                            and invoice.book_id = '".$g_book_id."'
+                        inner join
+                            person
+                            on person.person_id = split_bill_details.person_id
+                            ".$where_person_id." 
+                    ";
+                    $result = $db->query($query);
+                    
+                    while($row = $result->fetchArray())
+                    {
+                        $total_amount = 0;
+                        //split_bill_details
+                        $total_amount += $row['item_amount'];   
+                        $total_amount += $row['tax_amount'];   
+                        $total_amount -= $row['discount_amount'];   
+                        $total_amount += $row['delivery_amount'];   
+                        $total_amount += $row['other_amount'];   
+                        $total_amount += $row['adjustment_amount'];  
+                        $arr_data['data_loop'][$row['created_at']]['SPLIT_BILL:'.$row['sb_id']][$row['person_id']]['amount'] = $total_amount; 
+                    }
+                    
+                    //Load Payment
+                    $query = "
+                        select
+                            *
+                        from
+                            payment
+                        inner join
+                            person
+                            on person.person_id = payment.person_id
+                            ".$where_person_id." 
+                        where
+                            payment.book_id = '".$g_book_id."' 
+                    ";
+                    $result = $db->query($query);
+                    
+                    while($row = $result->fetchArray())
+                    {
+                        if($row['payment_type_id'] == 1)
+                        {
+                            $arr_data['data_loop'][$row['created_at']]['PAYMENT:'.$row['payment_id']][$row['person_id']]['amount'] = $row['amount']*-1;   
+                        }
+                        else
+                        {
+                            $arr_data['data_loop'][$row['created_at']]['PAYMENT:'.$row['payment_id']][$row['person_id']]['amount'] = $row['amount'];   
+                        }
+                            
+                    }
+
+                    //print('<pre>'.print_r($arr_data['data_loop'],true).'</pre>');
+                  
+                    //print('<pre>'.print_r($arr_data['data_loop'],true).'</pre>');
+                    ?>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Type</th>
+                                <th>Name</th>
+                                <th>Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        <?php
+                            if(count($arr_data['data_loop']) == 0)
+                            {
+                            ?>
+                                <tr>
+                                    <td colspan="100">No Data</td>
+                                </tr>
+                            <?php
+                            }
+                            else
+                            {
+                                foreach($arr_data['data_loop'] as $date => $value)
+                                {
+                                    $show_date = date('Y-m-d H:i:s', $date);
+                                    foreach($arr_data['data_loop'][$date] as $type_id => $value)
+                                    {
+                                        $show_type = $type_id;
+                                        foreach($arr_data['data_loop'][$date][$type_id] as $person_id => $value)
+                                        {
+                                        ?>
+                                            <tr>
+                                                <td><?=$show_date?></td>
+                                                <td><?=$show_type?></td>
+                                                <td><?=$arr_data['list_person'][$person_id]['name'].' :: '.$person_id?></td>
+                                                <td class="text-right"><?=parsenumber($value['amount'],2)?></td>
+
+                                            </tr>
+                                        <?php 
+                                            $show_date = ''; 
+                                            $show_type = '';  
+                                        }   
+                                    }
+                                }
+                                    
+                            }
+                        ?>
+                        </tbody>
+                    </table>
+                    <?php    
+                }
+                else
+                {
+                    echo 'Invalid Report Type';
+                }
             }
         ?>
     </form>
+    </div>
     <?php
         
 }
