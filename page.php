@@ -1950,7 +1950,7 @@ elseif($page == 'payment')
 ?>
     <div class="container">
         <h1>
-            <a href="<?=APP_URL.'?page=book_details&book_id'.$g_book_id?>">
+            <a href="<?=APP_URL.'?page=book_details&book_id='.$g_book_id?>">
                 <svg id="i-chevron-left" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentcolor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2">
                     <path d="M20 30 L8 16 20 2" />
                 </svg>
@@ -2174,6 +2174,7 @@ elseif($page == 'summary')
     while($row = $result->fetchArray())
     {
         $arr_data['list_person'][$row['person_id']]['name'] = $row['initial_name'].' - '.$row['person_name'];
+        $arr_data['list_person'][$row['person_id']]['initial_name'] = $row['initial_name'];
             
     }
     
@@ -2195,6 +2196,10 @@ elseif($page == 'summary')
             $_GET['v_date_from'] = date('Y-m-d');    
             $_GET['v_date_to'] = date('Y-m-d');    
             $_GET['v_person_id'] = array('all');    
+            $_GET['v_sort_by'] = 'remaining';    
+            $_GET['v_sort_by_type'] = 'desc';    
+            $_GET['v_opt_exclude_owner'] = 1;    
+            $_GET['v_opt_initial_only'] = 1;    
         }
         ?>
         <table>
@@ -2239,6 +2244,30 @@ elseif($page == 'summary')
                 </td>
             </tr>
             <tr>
+                <td>Sort By</td>
+                <td>
+                    <select name="v_sort_by">
+                        <option value="person_name"<?=isset($_GET['v_sort_by']) && $_GET['v_sort_by'] == 'person_name' ? ' selected' : ''?>>Person Name</option>
+                        <option value="remaining"<?=isset($_GET['v_sort_by']) && $_GET['v_sort_by'] == 'remaining' ? ' selected' : ''?>>Remaining</option>
+                    </select>
+                    <select name="v_sort_by_type">
+                        <option value="asc"<?=isset($_GET['v_sort_by_type']) && $_GET['v_sort_by_type'] == 'asc' ? ' selected' : ''?>>ASC</option>
+                        <option value="desc"<?=isset($_GET['v_sort_by_type']) && $_GET['v_sort_by_type'] == 'desc' ? ' selected' : ''?>>DESC</option>
+                    </select>
+                </td>
+            </tr>
+            <tr>
+                <td>Options</td>
+                <td>
+                    <label class="d-block">
+                        <input type="checkbox" value="1" name="v_opt_exclude_owner"<?=isset($_GET['v_opt_exclude_owner']) && $_GET['v_opt_exclude_owner'] ? ' checked' : ''?>> Exclude Book Owner
+                    </label>
+                    <label class="d-block">
+                        <input type="checkbox" value="1" name="v_opt_initial_only"<?=isset($_GET['v_opt_initial_only']) && $_GET['v_opt_initial_only'] ? ' checked' : ''?>> Show Initial Only
+                    </label>
+                </td>
+            </tr>
+            <tr>
                 <th colspan="100">
                     <input type="hidden" name="book_id" value="<?=$g_book_id?>">
                     <input type="hidden" name="page" value="<?=$page?>">
@@ -2255,6 +2284,10 @@ elseif($page == 'summary')
                 $v_person_id = isset($_GET['v_person_id']) ? $_GET['v_person_id'] : array();
                 $book_id = (int) $_GET['book_id'];
                 $page = trim($_GET['page']);
+                $v_sort_by = trim($_GET['v_sort_by']);
+                $v_sort_by_type = trim($_GET['v_sort_by_type']);
+                $v_opt_exclude_owner = (int) $_GET['v_opt_exclude_owner'];
+                $v_opt_initial_only = (int) $_GET['v_opt_initial_only'];
 
                 $where_person_id = '';
 
@@ -2304,8 +2337,18 @@ elseif($page == 'summary')
                         $arr_data['data_loop'][$person_id]['discount_amount'] = 0;
                         $arr_data['data_loop'][$person_id]['delivery_amount'] = 0;
                         $arr_data['data_loop'][$person_id]['other_amount'] = 0;
-                        $arr_data['data_loop'][$person_id]['adjustment_amount'] = 0;    
-                        $arr_data['data_loop'][$person_id]['person_name'] = $value['name'];    
+                        $arr_data['data_loop'][$person_id]['adjustment_amount'] = 0; 
+                        
+                        if($v_opt_initial_only)
+                        {
+                            $arr_data['data_loop'][$person_id]['person_name'] = $value['initial_name'];   
+                        }   
+                        else
+                        {
+                            $arr_data['data_loop'][$person_id]['person_name'] = $value['name'];
+                        }
+                        
+                        $arr_data['data_loop'][$person_id]['person_name_title'] = $value['name'].' :: '.$person_id;    
                     }
                      
                     //Load Split BIll
@@ -2392,8 +2435,72 @@ elseif($page == 'summary')
                         $arr_data['data_loop'][$person_id]['adjustment_amount'] = $arr_data['split_bill_details'][$person_id]['adjustment_amount'];   
                         $arr_data['data_loop'][$person_id]['total_sb'] = $pure_sb;   
                         $arr_data['data_loop'][$person_id]['total_payment'] = $arr_data['payment'][$person_id][1]['amount']-$arr_data['payment'][$person_id][2]['amount'];   
+                        $arr_data['data_loop'][$person_id]['total_payment_debit'] = $arr_data['payment'][$person_id][1]['amount'];
+                        $arr_data['data_loop'][$person_id]['total_payment_kredit'] = $arr_data['payment'][$person_id][2]['amount'];   
                         $arr_data['data_loop'][$person_id]['total'] = $total_amount;   
                     }
+                    
+                    //pre
+                    $arr_data['data_loop_tot']['item_amount'] = 0;   
+                    $arr_data['data_loop_tot']['tax_amount'] = 0;   
+                    $arr_data['data_loop_tot']['discount_amount'] = 0;   
+                    $arr_data['data_loop_tot']['delivery_amount'] = 0;   
+                    $arr_data['data_loop_tot']['other_amount'] = 0;   
+                    $arr_data['data_loop_tot']['adjustment_amount'] = 0;   
+                    $arr_data['data_loop_tot']['total_sb'] = 0;   
+                    $arr_data['data_loop_tot']['total_payment'] = 0;
+                    $arr_data['data_loop_tot']['total_payment_debit'] = 0;
+                    $arr_data['data_loop_tot']['total_payment_kredit'] = 0;   
+                    $arr_data['data_loop_tot']['total'] = 0;
+                    
+                    $forsor = array();
+                    
+                    //Remove
+                    foreach($arr_data['data_loop'] as $person_id => $value)
+                    {
+                        if($value['total'] == 0)
+                        {
+                            unset($arr_data['data_loop'][$person_id]);
+                        }
+                        
+                        $arr_data['data_loop_tot']['item_amount'] += $value['item_amount'];   
+                        $arr_data['data_loop_tot']['tax_amount'] += $value['tax_amount'];   
+                        $arr_data['data_loop_tot']['discount_amount'] += $value['discount_amount'];   
+                        $arr_data['data_loop_tot']['delivery_amount'] += $value['delivery_amount'];   
+                        $arr_data['data_loop_tot']['other_amount'] += $value['other_amount'];   
+                        $arr_data['data_loop_tot']['adjustment_amount'] += $value['adjustment_amount'];   
+                        $arr_data['data_loop_tot']['total_sb'] += $value['total_sb'];   
+                        $arr_data['data_loop_tot']['total_payment'] += $value['total_payment'];   
+                        $arr_data['data_loop_tot']['total_payment_debit'] += $value['total_payment_debit'];
+                        $arr_data['data_loop_tot']['total_payment_kredit'] += $value['total_payment_kredit'];   
+                        $arr_data['data_loop_tot']['total'] += $value['total'];
+                        
+                        if($value['total'] != 0)
+                        {
+                            if($v_sort_by == 'remaining')
+                            {
+                                $forsor[$person_id] = $value['total'];    
+                            }
+                            else
+                            {
+                                $forsor[$person_id] = $value['person_name'];    
+                            }    
+                        }
+                            
+                                 
+                    }
+                    
+                    //sort
+                    if($v_sort_by_type == 'desc')
+                    {
+                        arsort($forsor);     
+                    }
+                    else
+                    {
+                        asort($forsor);    
+                    }
+                   
+                        
                     
                     //print('<pre>'.print_r($arr_data['data_loop'],true).'</pre>');
                     ?>
@@ -2408,7 +2515,8 @@ elseif($page == 'summary')
                                 <th>Other</th>
                                 <th>Adjustment</th>
                                 <th>Total</th>
-                                <th>Pay</th>
+                                <th>Pay Debit</th>
+                                <th>Pay Kredit</th>
                                 <th>Remaining</th>
                             </tr>
                         </thead>
@@ -2424,26 +2532,42 @@ elseif($page == 'summary')
                             }
                             else
                             {
-                                foreach($arr_data['data_loop'] as $person_id => $value)
+                                foreach($forsor as $person_id => $value)
                                 {
                                 ?>
                                     <tr>
-                                        <td><?=$value['person_name'].' :: '.$person_id?></td>
-                                        <td class="text-right"><?=parsenumber($value['item_amount'],2)?></td>
-                                        <td class="text-right"><?=parsenumber($value['tax_amount'],2)?></td>
-                                        <td class="text-right"><?=parsenumber($value['discount_amount'],2)?></td>
-                                        <td class="text-right"><?=parsenumber($value['delivery_amount'],2)?></td>
-                                        <td class="text-right"><?=parsenumber($value['other_amount'],2)?></td>
-                                        <td class="text-right"><?=parsenumber($value['adjustment_amount'],2)?></td>
-                                        <td class="text-right"><?=parsenumber($value['total_sb'],2)?></td>
-                                        <td class="text-right"><?=parsenumber($value['total_payment'],2)?></td>
-                                        <td class="text-right"><?=parsenumber($value['total'],2)?></td>
+                                        <td title="<?=$arr_data['data_loop'][$person_id]['person_name_title']?>"><?=$arr_data['data_loop'][$person_id]['person_name']?></td>
+                                        <td class="text-right"><?=parsenumber($arr_data['data_loop'][$person_id]['item_amount'],2)?></td>
+                                        <td class="text-right"><?=parsenumber($arr_data['data_loop'][$person_id]['tax_amount'],2)?></td>
+                                        <td class="text-right"><?=parsenumber($arr_data['data_loop'][$person_id]['discount_amount'],2)?></td>
+                                        <td class="text-right"><?=parsenumber($arr_data['data_loop'][$person_id]['delivery_amount'],2)?></td>
+                                        <td class="text-right"><?=parsenumber($arr_data['data_loop'][$person_id]['other_amount'],2)?></td>
+                                        <td class="text-right"><?=parsenumber($arr_data['data_loop'][$person_id]['adjustment_amount'],2)?></td>
+                                        <td class="text-right"><?=parsenumber($arr_data['data_loop'][$person_id]['total_sb'],2)?></td>
+                                        <td class="text-right"><?=parsenumber($arr_data['data_loop'][$person_id]['total_payment_debit'],2)?></td>
+                                        <td class="text-right"><?=parsenumber($arr_data['data_loop'][$person_id]['total_payment_kredit'],2)?></td>
+                                        <td class="text-right"><?=parsenumber($arr_data['data_loop'][$person_id]['total'],2)?></td>
                                     </tr>
                                 <?php    
                                 }
                             }
                         ?>
                         </tbody>
+                        <tfoot>
+                            <tr>
+                                <td class="text-right">Total</td>
+                                <td class="text-right"><?=parsenumber($arr_data['data_loop_tot']['item_amount'])?></td>
+                                <td class="text-right"><?=parsenumber($arr_data['data_loop_tot']['tax_amount'])?></td>
+                                <td class="text-right"><?=parsenumber($arr_data['data_loop_tot']['discount_amount'])?></td>
+                                <td class="text-right"><?=parsenumber($arr_data['data_loop_tot']['delivery_amount'])?></td>
+                                <td class="text-right"><?=parsenumber($arr_data['data_loop_tot']['other_amount'])?></td>
+                                <td class="text-right"><?=parsenumber($arr_data['data_loop_tot']['adjustment_amount'])?></td>
+                                <td class="text-right"><?=parsenumber($arr_data['data_loop_tot']['total_sb'])?></td>
+                                <td class="text-right"><?=parsenumber($arr_data['data_loop_tot']['total_payment_debit'])?></td>
+                                <td class="text-right"><?=parsenumber($arr_data['data_loop_tot']['total_payment_kredit'])?></td>
+                                <td class="text-right"><?=parsenumber($arr_data['data_loop_tot']['total'])?></td>
+                            </tr>
+                        </tfoot>
                     </table>
                     <?php            
                 }

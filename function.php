@@ -9,5 +9,5 @@ function parsedate($string)
 
 function parsenumber($number,$decimal = 2)
 {
-    return number_format($number,$decimal,',','.');
+    return number_format($number,$decimal,'.',',');
 }

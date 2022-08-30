@@ -455,7 +455,7 @@ if($_SERVER['REQUEST_METHOD'] === 'POST')
             $remarks = isset($_POST['remarks']) ? trim($_POST['remarks']) : '';
             $_SESSION['mess'] = '';
             
-            if(! preg_match('/^[a-zA-Z0-9-_ ]{1,50}$/', $person_name)) 
+            if(! preg_match('/^[a-zA-Z0-9-_. ]{1,50}$/', $person_name)) 
             {
                 $_SESSION['mess'] .= 'Full Name Invalid<br>';        
             }
