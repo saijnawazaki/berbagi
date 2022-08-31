@@ -2136,7 +2136,7 @@ elseif($page == 'summary')
 {
     $g_book_id = isset($_GET['book_id']) ? $_GET['book_id'] : 0;
     
-    if(! preg_match('/^[0-9]*$/', $g_book_id)) 
+    if(! preg_match('/^[0-9]*$/', $g_book_id) && $ses['role_id'] != 2) 
     {
         die('Book ID Invalid');        
     }
@@ -2178,6 +2178,24 @@ elseif($page == 'summary')
             
     }
     
+    //load person
+    $query = "
+        select
+            *
+        from
+            book
+        order by
+            book_title ASC
+    ";
+    $result = $db->query($query);
+    $arr_data['list_book'] = array();
+    while($row = $result->fetchArray())
+    {
+        $arr_data['list_book'][$row['book_id']]['user_id'] = $row['user_id'];
+        $arr_data['list_book'][$row['book_id']]['name'] = $row['book_title'];
+            
+    }
+    
     ?>
     <div class="container">
     <h1>
@@ -2197,9 +2215,19 @@ elseif($page == 'summary')
             $_GET['v_date_to'] = date('Y-m-d');    
             $_GET['v_person_id'] = array('all');    
             $_GET['v_sort_by'] = 'remaining';    
-            $_GET['v_sort_by_type'] = 'desc';    
-            $_GET['v_opt_exclude_owner'] = 1;    
-            $_GET['v_opt_initial_only'] = 1;    
+            $_GET['v_sort_by_type'] = 'desc';  
+            $_GET['v_opt_initial_only'] = 1;
+            if($g_book_id == 0)
+            {
+                if($ses['role_id'] == 2)
+                {
+                    $_GET['v_book_id'] = array('all');
+                }    
+            }    
+            else
+            {
+                $_GET['v_book_id'] = array($g_book_id);
+            }    
         }
         ?>
         <table>
@@ -2230,13 +2258,29 @@ elseif($page == 'summary')
             <tr>
                 <td>Person</td>
                 <td>
-                    <select name="v_person_id[]" multiple="">
+                    <select name="v_person_id[]" style="height: 160px;" multiple="">
                         <option value="all"<?=(isset($_GET['v_person_id']) && in_array('all',$_GET['v_person_id']) ? ' selected' : '')?>>All</option>
                         <?php
                         foreach($arr_data['list_person'] as $person_id => $value)
                         {
                         ?>
                             <option value="<?=$person_id?>"<?=(isset($_GET['v_person_id']) && in_array($person_id,$_GET['v_person_id']) ? ' selected' : '')?>><?=$value['name'].' :: '.$person_id?></option>
+                        <?php
+                        }
+                        ?>
+                    </select>
+                </td>
+            </tr>
+            <tr>
+                <td>Book</td>
+                <td>
+                    <select name="v_book_id[]" style="height: 160px;" multiple="">
+                        <option value="all"<?=(isset($_GET['v_book_id']) && in_array('all',$_GET['v_book_id']) ? ' selected' : '')?>>All</option>
+                        <?php
+                        foreach($arr_data['list_book'] as $book_id => $value)
+                        {
+                        ?>
+                            <option value="<?=$book_id?>"<?=(isset($_GET['v_book_id']) && in_array($book_id,$_GET['v_book_id']) ? ' selected' : '')?>><?=$value['name'].' :: '.$book_id?></option>
                         <?php
                         }
                         ?>
@@ -2260,9 +2304,6 @@ elseif($page == 'summary')
                 <td>Options</td>
                 <td>
                     <label class="d-block">
-                        <input type="checkbox" value="1" name="v_opt_exclude_owner"<?=isset($_GET['v_opt_exclude_owner']) && $_GET['v_opt_exclude_owner'] ? ' checked' : ''?>> Exclude Book Owner
-                    </label>
-                    <label class="d-block">
                         <input type="checkbox" value="1" name="v_opt_initial_only"<?=isset($_GET['v_opt_initial_only']) && $_GET['v_opt_initial_only'] ? ' checked' : ''?>> Show Initial Only
                     </label>
                 </td>
@@ -2282,13 +2323,50 @@ elseif($page == 'summary')
                 $v_date_from = parsedate($_GET['v_date_from']);
                 $v_date_to = parsedate($_GET['v_date_to']);
                 $v_person_id = isset($_GET['v_person_id']) ? $_GET['v_person_id'] : array();
+                $v_book_id = isset($_GET['v_book_id']) ? $_GET['v_book_id'] : array();
                 $book_id = (int) $_GET['book_id'];
                 $page = trim($_GET['page']);
                 $v_sort_by = trim($_GET['v_sort_by']);
-                $v_sort_by_type = trim($_GET['v_sort_by_type']);
-                $v_opt_exclude_owner = (int) $_GET['v_opt_exclude_owner'];
+                $v_sort_by_type = trim($_GET['v_sort_by_type']);          
                 $v_opt_initial_only = (int) $_GET['v_opt_initial_only'];
-
+                
+                $where_book_id = '';
+                if(in_array('all',$v_book_id))
+                {
+                    if($ses['role_id'] != 2)
+                    {
+                        die('No Auth');    
+                    }
+                    
+                }
+                else
+                {
+                    if(count($v_book_id) == 0)
+                    {
+                        die('Book Empty');    
+                    }
+                    else
+                    {
+                        foreach($v_book_id as $index => $f_book_id)
+                        {
+                            if($arr_data['list_book'][$f_book_id]['user_id'] == $ses['user_id'])
+                            {
+                                if($where_book_id != '')
+                                {
+                                    $where_book_id .= ',';
+                                }   
+                                $where_book_id .= $f_book_id;
+                            }
+                        }
+                    }
+                        
+                }
+                
+                if($where_book_id != '')
+                {
+                    $where_book_id = "AND book.book_id in (".$where_book_id.")";
+                }
+                                        
                 $where_person_id = '';
 
                 if(!in_array('all',$v_person_id))
@@ -2317,7 +2395,7 @@ elseif($page == 'summary')
                     $arr_data['split_bill_details'] = array();
                     $arr_data['payment'] = array();
                     foreach($arr_data['list_person'] as $person_id => $value)
-                    {
+                    {   
                         if(!in_array('all',$v_person_id) && !in_array($person_id,$v_person_id))
                         {
                             continue;
@@ -2363,7 +2441,10 @@ elseif($page == 'summary')
                         inner join
                             invoice
                             on invoice.invoice_id = split_bill.invoice_id
-                            and invoice.book_id = '".$g_book_id."'
+                        inner join
+                            book
+                            on book.book_id = invoice.book_id
+                            ".$where_book_id."
                         inner join
                             person
                             on person.person_id = split_bill_details.person_id
@@ -2386,15 +2467,17 @@ elseif($page == 'summary')
                     //Load Payment
                     $query = "
                         select
-                            *
+                            payment.*
                         from
                             payment
                         inner join
                             person
                             on person.person_id = payment.person_id
-                            ".$where_person_id." 
-                        where
-                            payment.book_id = '".$g_book_id."' 
+                            ".$where_person_id."
+                        inner join
+                            book
+                            on book.book_id = payment.book_id
+                            ".$where_book_id." 
                     ";
                     //echo $query;
                     $result = array();
@@ -2439,6 +2522,7 @@ elseif($page == 'summary')
                         $arr_data['data_loop'][$person_id]['total_payment_kredit'] = $arr_data['payment'][$person_id][2]['amount'];   
                         $arr_data['data_loop'][$person_id]['total'] = $total_amount;   
                     }
+                      
                     
                     //pre
                     $arr_data['data_loop_tot']['item_amount'] = 0;   
