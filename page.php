@@ -61,6 +61,13 @@ elseif($page == 'home')
                     </div>
                 </a>
             </div>
+            <div class="col-6 col-lg-3">
+                <a href="<?=APP_URL.'?page=summary&book_id=0'?>">
+                    <div class="bg-light p-3 br-2 mb-3">
+                        <h1>Summary</h1>
+                    </div>
+                </a>
+            </div>
         </div>
     </div>
 <?php    
@@ -221,6 +228,10 @@ elseif($page == 'book_details')
             die('Book not yours!');    
         }
     }
+    else
+    {
+        die('Book Invalid');
+    }
 ?>
     <div class="container">
         <h1>
@@ -295,23 +306,32 @@ elseif($page == 'invoice')
             die('Book not yours!');    
         }
     }
+    else
+    {
+        die('Book Invalid');
+    }
     
     $arr_data['list_invoice'] = array();
     $query = "
         select
-            *
+            invoice.*,
+            restaurant.restaurant_name
         from
             invoice
+        inner join
+            restaurant
+            on restaurant.restaurant_id = invoice.restaurant_id 
         where
-            book_id = '".$g_book_id."'
+            invoice.book_id = '".$g_book_id."'
         order by
-            created_at DESC
+            invoice.created_at DESC
     ";
     $result = $db->query($query);    
     
     while($row = $result->fetchArray())
     {
         $arr_data['list_invoice'][$row['invoice_date']][$row['invoice_id']]['title'] = 'INV/'.$row['book_id'].'/'.date('Ymd',$row['created_at']).'/'.$row['restaurant_id'].'/'.$row['invoice_id'];    
+        $arr_data['list_invoice'][$row['invoice_date']][$row['invoice_id']]['restaurant_name'] = $row['restaurant_name'];    
     }
 ?>
     <div class="container">
@@ -337,6 +357,7 @@ elseif($page == 'invoice')
                 <tr>
                     <th>Date</th>
                     <th>Invoice ID</th>
+                    <th>Restaurant Name</th>
                     <th>Action</th>
                 </tr>
             </thead>
@@ -361,6 +382,7 @@ elseif($page == 'invoice')
                                 <tr>
                                     <td><?=$invoice_date_show?></td>
                                     <td><?=$val['title']?> </td>
+                                    <td><?=$val['restaurant_name']?> </td>
                                     <td>
                                         <a class="button bg-warning" href="<?=APP_URL.'?page=invoice_add_edit&book_id='.$g_book_id.'&invoice_id='.$invoice_id?>">Edit</a>
                                         <a target="_blank" class="button" href="<?=APP_URL.'?page=split_bill_add_edit&book_id='.$g_book_id.'&invoice_id='.$invoice_id.'&sb=0'?>">Split Bill</a>
@@ -1181,6 +1203,10 @@ elseif($page == 'split_bill')
             die('Book not yours!');    
         }
     }
+    else
+    {
+        die('Book Invalid');
+    }
     
     $arr_data['list_invoice'] = array();
     $query = "
@@ -1189,13 +1215,17 @@ elseif($page == 'split_bill')
             invoice.book_id,
             invoice.created_at as inv_created_at,
             invoice.restaurant_id,
-            invoice.invoice_date
+            invoice.invoice_date,
+            restaurant.restaurant_name
         from
             split_bill
         inner join
             invoice
             on invoice.invoice_id = split_bill.invoice_id
             and invoice.book_id = '".$g_book_id."'
+        inner join
+            restaurant
+            on restaurant.restaurant_id = invoice.restaurant_id 
         order by
             split_bill.created_at DESC
     ";
@@ -1205,6 +1235,7 @@ elseif($page == 'split_bill')
     {
         $arr_data['list_invoice'][$row['created_at']][$row['sb_id']]['inv_code'] = 'INV/'.$row['book_id'].'/'.date('Ymd',$row['inv_created_at']).'/'.$row['restaurant_id'].'/'.$row['invoice_id'];    
         $arr_data['list_invoice'][$row['created_at']][$row['sb_id']]['sb_code'] = 'SB/'.$row['book_id'].'/'.date('Ymd',$row['inv_created_at']).'/'.$row['restaurant_id'].'/'.$row['invoice_id'].'/'.$row['sb_id'];    
+        $arr_data['list_invoice'][$row['created_at']][$row['sb_id']]['restaurant_name'] = $row['restaurant_name'];    
     }
 ?>
     <div class="container">
@@ -1230,6 +1261,7 @@ elseif($page == 'split_bill')
                 <tr>
                     <th>Date</th>
                     <th>Invoice ID</th>
+                    <th>Restaurant</th>
                     <th>Split Bill ID</th>
                     <th>Action</th>
                 </tr>
@@ -1255,6 +1287,7 @@ elseif($page == 'split_bill')
                                 <tr>
                                     <td><?=$invoice_date_show?></td>
                                     <td><?=$val['inv_code']?> </td>
+                                    <td><?=$val['restaurant_name']?> </td>
                                     <td><?=$val['sb_code']?> </td>
                                     <td>
                                         <a class="button bg-warning" href="<?=APP_URL.'?page=split_bill_add_edit&book_id='.$g_book_id.'&sb_id='.$invoice_id?>">Edit</a>
@@ -1314,7 +1347,8 @@ elseif($page == 'split_bill_add_edit')
     $query = "
         select
             invoice.*,
-            res_details.total
+            res_details.total,
+            restaurant.restaurant_name
         from
             invoice
         inner join
@@ -1328,9 +1362,13 @@ elseif($page == 'split_bill_add_edit')
                 invoice_id
         ) as res_details
         on res_details.invoice_id = invoice.invoice_id
+        inner join
+            restaurant
+            on restaurant.restaurant_id = invoice.restaurant_id
         where
             invoice.book_id = '".$g_book_id."'
         order by
+            invoice.invoice_date DESC,
             invoice.created_at DESC
     ";
     $result = $db->query($query);    
@@ -1344,6 +1382,7 @@ elseif($page == 'split_bill_add_edit')
         $arr_data['list_invoice'][$row['invoice_date']][$row['invoice_id']]['other_amount'] = $row['other_amount'];    
         $arr_data['list_invoice'][$row['invoice_date']][$row['invoice_id']]['adjustment_amount'] = $row['adjustment_amount'];    
         $arr_data['list_invoice'][$row['invoice_date']][$row['invoice_id']]['total'] = $row['total'];
+        $arr_data['list_invoice'][$row['invoice_date']][$row['invoice_id']]['restaurant_name'] = $row['restaurant_name'];
 
         $arr_data['list_invoice_only'][$row['invoice_id']]['tax_amount'] = $row['tax_amount'];    
         $arr_data['list_invoice_only'][$row['invoice_id']]['discount_amount'] = $row['discount_amount'];    
@@ -1539,7 +1578,7 @@ elseif($page == 'split_bill_add_edit')
                                         }
                                     ';
                                 ?>
-                                    <option onclick="<?=$js?>" value="<?=$invoice_id?>"<?=isset($arr_data['list_sb_header']) && $arr_data['list_sb_header']['invoice_id'] == $invoice_id ? ' selected' : ''?>><?=$val['title']?></option>
+                                    <option onclick="<?=$js?>" value="<?=$invoice_id?>"<?=isset($arr_data['list_sb_header']) && $arr_data['list_sb_header']['invoice_id'] == $invoice_id ? ' selected' : ''?>><?=$val['title'].' - '.$val['restaurant_name']?></option>
                                 <?php
                                 } 
                                 echo '</optgroup>';   
@@ -1919,6 +1958,10 @@ elseif($page == 'payment')
             die('Book not yours!');    
         }
     }
+    else
+    {
+        die('Book Invalid');
+    }
     
     $arr_data['list'] = array();
     $query = "
@@ -2199,7 +2242,7 @@ elseif($page == 'summary')
     ?>
     <div class="container">
     <h1>
-        <a href="<?=APP_URL.'?page=book_details&book_id='.$g_book_id?>">
+        <a href="<?=($g_book_id == 0 ? APP_URL.'?page=home&book_id=0' : APP_URL.'?page=book_details&book_id='.$g_book_id)?>">
             <svg id="i-chevron-left" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentcolor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2">
                 <path d="M20 30 L8 16 20 2" />
             </svg>
