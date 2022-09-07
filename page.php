@@ -2801,7 +2801,7 @@ elseif($page == 'summary')
                                             <tr>
                                                 <td><?=$show_date?></td>
                                                 <td><?=$show_type?></td>
-                                                <td><?=$arr_data['list_person'][$person_id]['name'].' :: '.$person_id?></td>
+                                                <td><?=$v_opt_initial_only ? $arr_data['list_person'][$person_id]['initial_name'] : $arr_data['list_person'][$person_id]['name'].' :: '.$person_id?></td>
                                                 <td class="text-right"><?=parsenumber($value['amount'],2)?></td>
 
                                             </tr>
@@ -2828,4 +2828,256 @@ elseif($page == 'summary')
     </div>
     <?php
         
+}
+elseif($page == 'personal_report')
+{
+    $g_initial = isset($_GET['initial']) ? trim(strtoupper($_GET['initial'])) : '';
+    
+    if($g_initial == '')
+    {
+        die('Initial Name Invalid');    
+    }
+    else
+    {
+        if(! preg_match('/^[A-Za-z]*$/', $g_initial)) 
+        {
+            die('Initial Name Invalid (2)');        
+        }    
+    }
+    
+    //load profile
+    $query = "
+        select
+            person_id,
+            person_name
+        from
+            person
+        where
+            initial_name = '".$g_initial."'
+    ";
+    $result = $db->query($query) or die('QWUIEHUQWEHIUQWHEUHQWEQWE');
+    $row = $result->fetchArray();
+    
+    $db_person_id = (int) $row['person_id'];        
+    $db_person_name = trim($row['person_name']);
+    
+    if($db_person_id == 0)
+    {
+        die('Data Person Invalid');
+    }
+    
+    //sensor
+    $exp_pn = explode(' ',$db_person_name);
+    $censor_person_name = '';
+    foreach($exp_pn as $value)
+    {
+        if($censor_person_name != '')
+        {
+            $censor_person_name .= ' ';
+        }
+        $censor_person_name .= substr($value,0,1);
+        for($x = 0; $x < mt_rand(1,9); $x++)
+        {
+            $censor_person_name.= '*';    
+        }          
+    }
+    
+    //Init
+    $arr_data['data'] = array();
+    $arr_data['book'] = array();
+    
+    //Load Split BIll
+    $query = "
+        select
+            book.book_id,
+            book.book_title,
+            split_bill.sb_date,
+            sum(split_bill_details.item_amount) as item_amount,
+            sum(split_bill_details.tax_amount) as tax_amount,
+            sum(split_bill_details.discount_amount) as discount_amount,
+            sum(split_bill_details.delivery_amount) as delivery_amount,
+            sum(split_bill_details.other_amount) as other_amount,
+            sum(split_bill_details.adjustment_amount) as adjustment_amount
+        from
+            split_bill_details
+        inner join
+            split_bill
+            on split_bill.sb_id = split_bill_details.sb_id
+        inner join
+            invoice
+            on invoice.invoice_id = split_bill.invoice_id
+        inner join
+            book
+            on book.book_id = invoice.book_id
+        inner join
+            person
+            on person.person_id = split_bill_details.person_id
+            and person.person_id = '".$db_person_id."'
+        group by
+            book.book_id,
+            book.book_title,
+            split_bill.sb_date
+    ";
+    $result = $db->query($query) or die('error');
+    
+    while($row = $result->fetchArray())
+    {
+        $arr_data['book'][$row['book_id']]['name'] = $row['book_title'];    
+        
+        $arr_data['data'][$row['sb_date']][$row['book_id']]['split_bill']['item_amount'] = (float) $row['item_amount'];    
+        $arr_data['data'][$row['sb_date']][$row['book_id']]['split_bill']['tax_amount'] = (float) $row['tax_amount'];    
+        $arr_data['data'][$row['sb_date']][$row['book_id']]['split_bill']['discount_amount'] = (float) $row['discount_amount'];    
+        $arr_data['data'][$row['sb_date']][$row['book_id']]['split_bill']['delivery_amount'] = (float) $row['delivery_amount'];    
+        $arr_data['data'][$row['sb_date']][$row['book_id']]['split_bill']['other_amount'] = (float) $row['other_amount'];    
+        $arr_data['data'][$row['sb_date']][$row['book_id']]['split_bill']['adjustment_amount'] = (float) $row['adjustment_amount'];    
+    }
+    
+    //Load Payment
+    $query = "
+        select
+            book.book_id,
+            book.book_title,
+            payment.payment_date,
+            payment.payment_type_id,
+            sum(payment.amount) as amount
+        from
+            payment
+        inner join
+            person
+            on person.person_id = payment.person_id
+            and person.person_id = '".$db_person_id."'
+        inner join
+            book
+            on book.book_id = payment.book_id
+        group by
+            book.book_id,
+            book.book_title,
+            payment.payment_date,
+            payment.payment_type_id 
+    ";
+    //echo $query; 
+    //$result = null;
+    //$row = null;
+    $result = $db->query($query) or die('error2');
+    while($row = $result->fetchArray())
+    {
+        $arr_data['book'][$row['book_id']]['name'] = $row['book_title'];
+        $arr_data['data'][$row['payment_date']][$row['book_id']]['payment'][$row['payment_type_id']]['amount'] = $row['amount'];    
+    }
+    
+    //print_r($arr_data['data']);
+    
+    ?>
+    <div class="container">
+        <div class="row">
+            <div class="col-12 col-lg-3">
+                <div class="bg-light br-3 p-3 mt-3">
+                    <div class="row">
+                        <div class="col-4">
+                            <img src="<?=APP_URL?>/assets/kirbo_184x184.jpg" class="br-round border-2 bc-muted img-fluid">
+                        </div>
+                        <div class="col-8">
+                            Puyo, <?=$censor_person_name.' ('.$g_initial.')'?>
+                        </div>
+                    </div>
+                </div> 
+            </div>
+            <div class="col-12 col-lg-9">
+                <div class="row">
+                    <div class="col-4">
+                        <div class="bg-light br-3 p-3 mt-3">
+                            <b>Total</b>
+                            <h4>IDR 999,999.00</h4>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="br-3 p-3 mt-3" style="background-color: #9fe092;">
+                            <b>Payment</b>
+                            <h4>IDR 999,999.00</h4>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="br-3 p-3 mt-3" style="background-color: #e0db92;">
+                            <b>Remaining</b>
+                            <h4>IDR 999,999.00</h4>
+                        </div>
+                    </div>   
+                </div>
+                <div class="col-12">
+                    <div class="bg-light br-3 p-3 mt-3">
+                        <b>Summary</b>
+                        <table>
+                            <tr>
+                                <th>Date</th>
+                                <th>Book</th>
+                                <th>Item</th>
+                                <th>Tax</th>
+                                <th>Discount</th>
+                                <th>Delivery</th>
+                                <th>Other</th>
+                                <th>Adjustment</th>
+                                <th>Total</th>
+                                <th>Pay Debit</th>
+                                <th>Pay Kredit</th>
+                                <th>Remaining</th>
+                            </tr>
+                            <?php
+                                if(count($arr_data['data']) == 0)
+                                {
+                                ?>
+                                    <tr>
+                                        <td colspan="100">No Data</td>
+                                    </tr>
+                                <?php
+                                }
+                                else
+                                {
+                                    foreach($arr_data['data'] as $date => $value)
+                                    {
+                                        foreach($arr_data['data'][$date] as $book_id => $value)
+                                        {
+                                            $total_sb = 0;
+                                            $total_sb += $arr_data['data'][$date][$book_id]['split_bill']['item_amount'];
+                                            $total_sb += $arr_data['data'][$date][$book_id]['split_bill']['tax_amount'];
+                                            $total_sb -= $arr_data['data'][$date][$book_id]['split_bill']['discount_amount'];
+                                            $total_sb += $arr_data['data'][$date][$book_id]['split_bill']['delivery_amount'];
+                                            $total_sb += $arr_data['data'][$date][$book_id]['split_bill']['other_amount'];
+                                            $total_sb += $arr_data['data'][$date][$book_id]['split_bill']['adjustment_amount'];
+                                            
+                                            $total_remaining = 0;
+                                            $total_remaining += $total_sb;
+                                            $total_remaining -= isset($arr_data['data'][$date][$book_id]['payment'][1]['amount']) ? $arr_data['data'][$date][$book_id]['payment'][1]['amount'] : 0;
+                                            $total_remaining += isset($arr_data['data'][$date][$book_id]['payment'][2]['amount']) ? $arr_data['data'][$date][$book_id]['payment'][2]['amount'] : 0; 
+                                        ?>
+                                            <tr>
+                                                <td><?=date('D, d-m-Y',$date)?></td>
+                                                <td><?=$arr_data['book'][$book_id]['name'].' :: '.$book_id?></td>
+                                                <td class="text-right"><?=isset($arr_data['data'][$date][$book_id]['split_bill']['item_amount']) ? parsenumber($arr_data['data'][$date][$book_id]['split_bill']['item_amount'],2) : ''?></td>
+                                                <td class="text-right"><?=isset($arr_data['data'][$date][$book_id]['split_bill']['tax_amount']) ? parsenumber($arr_data['data'][$date][$book_id]['split_bill']['tax_amount'],2) : ''?></td>
+                                                <td class="text-right"><?=isset($arr_data['data'][$date][$book_id]['split_bill']['discount_amount']) ? parsenumber($arr_data['data'][$date][$book_id]['split_bill']['discount_amount'],2) : ''?></td>
+                                                <td class="text-right"><?=isset($arr_data['data'][$date][$book_id]['split_bill']['delivery_amount']) ? parsenumber($arr_data['data'][$date][$book_id]['split_bill']['delivery_amount'],2) : ''?></td>
+                                                <td class="text-right"><?=isset($arr_data['data'][$date][$book_id]['split_bill']['other_amount']) ? parsenumber($arr_data['data'][$date][$book_id]['split_bill']['other_amount'],2) : ''?></td>
+                                                <td class="text-right"><?=isset($arr_data['data'][$date][$book_id]['split_bill']['adjustment_amount']) ? parsenumber($arr_data['data'][$date][$book_id]['split_bill']['adjustment_amount'],2) : ''?></td>
+                                                <td class="text-right"><?=parsenumber($total_sb,2)?></td>
+                                                <td class="text-right"><?=isset($arr_data['data'][$date][$book_id]['payment'][1]['amount']) ? parsenumber($arr_data['data'][$date][$book_id]['payment'][1]['amount'],2) : ''?></td>
+                                                <td class="text-right"><?=isset($arr_data['data'][$date][$book_id]['payment'][2]['amount']) ? parsenumber($arr_data['data'][$date][$book_id]['payment'][2]['amount'],2) : ''?></td>
+                                                <td class="text-right"><?=parsenumber($total_remaining,2)?></td>
+                                            </tr>
+                                        <?php    
+                                        }    
+                                    }
+                                        
+                                }
+                            ?>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-12">
+                <small class="color-muted">*) Kirbo: https://terminalmontage.fandom.com/wiki/Kirbo</small>
+            </div>
+        </div>
+    </div>
+    <?php       
 }
