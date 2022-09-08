@@ -21,7 +21,7 @@ $page = isset($_GET['page']) ? $_GET['page'] : '';
 //check
 if($ses_username == '')
 {
-    if($page != 'login')
+    if($page != 'login' && $page != 'personal_report')
     {
         header('location: '.APP_URL.'?page=login');    
     }
