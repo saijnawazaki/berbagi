@@ -142,7 +142,7 @@ if($_SERVER['REQUEST_METHOD'] === 'POST')
             $name = isset($_POST['restaurant_name']) ? $_POST['restaurant_name'] : '';    
             $restaurant_id = isset($_POST['restaurant_id']) ? $_POST['restaurant_id'] : '';
             $_SESSION['mess'] = '';
-            if(! preg_match('/^[a-zA-Z0-9-_ ]{1,80}$/', $name)) 
+            if(! preg_match('/^[a-zA-Z0-9-_! ]{1,80}$/', $name)) 
             {
                 $_SESSION['mess'] .= 'Name Invalid<br>';        
             }

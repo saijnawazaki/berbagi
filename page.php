@@ -2832,6 +2832,7 @@ elseif($page == 'summary')
 elseif($page == 'personal_report')
 {
     $g_initial = isset($_GET['initial']) ? trim(strtoupper($_GET['initial'])) : '';
+    $g_manager_initial = isset($_GET['manager_initial']) ? trim(strtoupper($_GET['manager_initial'])) : '';
     
     if($g_initial == '')
     {
@@ -2842,6 +2843,18 @@ elseif($page == 'personal_report')
         if(! preg_match('/^[A-Za-z]*$/', $g_initial)) 
         {
             die('Initial Name Invalid (2)');        
+        }    
+    }
+    
+    if($g_manager_initial == '')
+    {
+        die('MGR Initial Name Invalid');    
+    }
+    else
+    {
+        if(! preg_match('/^[A-Za-z]*$/', $g_manager_initial)) 
+        {
+            die('MGR Initial Name Invalid (2)');        
         }    
     }
     
@@ -2866,20 +2879,25 @@ elseif($page == 'personal_report')
         die('Data Person Invalid');
     }
     
-    //sensor
-    $exp_pn = explode(' ',$db_person_name);
-    $censor_person_name = '';
-    foreach($exp_pn as $value)
+    //load profile
+    $query = "
+        select
+            person_id,
+            person_name
+        from
+            person
+        where
+            initial_name = '".$g_manager_initial."'
+    ";
+    $result = $db->query($query) or die('QWUIEHUQWEHIUQWHEUHQWEQWE');
+    $row = $result->fetchArray();
+    
+    $db_mgr_person_id = isset($row['person_id']) ? (int) $row['person_id'] : 0;        
+    $db_mgr_person_name = isset($row['person_name']) ? trim($row['person_name']) : '';
+    
+    if($db_mgr_person_id == 0)
     {
-        if($censor_person_name != '')
-        {
-            $censor_person_name .= ' ';
-        }
-        $censor_person_name .= substr($value,0,1);
-        for($x = 0; $x < mt_rand(1,9); $x++)
-        {
-            $censor_person_name.= '*';    
-        }          
+        die('Data Person Invalid');
     }
     
     //Init
@@ -2887,15 +2905,15 @@ elseif($page == 'personal_report')
     $arr_data['book'] = array();
     
     //this week
-    if(date('w') < 5)
+    if(date('w') >= 5)
     {
-        $today = parsedate(date('Y-m-d'))-(86400*7);
+        $today = strtotime('monday this week');
     }
     else
     {
-        $today = time();
+        $today = strtotime('monday last week');
     }
-    $from_date_week = $today-(86400*(7-date('w',$today)));
+    $from_date_week = $today;
     $to_date_week = $from_date_week+(86400*6); 
     
       
@@ -2922,6 +2940,7 @@ elseif($page == 'personal_report')
         inner join
             book
             on book.book_id = invoice.book_id
+            and book.user_id = '".$db_mgr_person_id."'
         inner join
             person
             on person.person_id = split_bill_details.person_id
@@ -2964,6 +2983,7 @@ elseif($page == 'personal_report')
         inner join
             book
             on book.book_id = payment.book_id
+            and book.user_id = '".$db_mgr_person_id."'
         where
             payment.payment_date between '".$from_date_week."' AND '".$to_date_week."'
         group by
@@ -2985,6 +3005,7 @@ elseif($page == 'personal_report')
     //total
     $total_total = 0;
     $total_payment = 0;
+    $total_payment_count = 0;
     
     //Load Split BIll
     $query = "
@@ -2994,7 +3015,8 @@ elseif($page == 'personal_report')
             sum(split_bill_details.discount_amount) as discount_amount,
             sum(split_bill_details.delivery_amount) as delivery_amount,
             sum(split_bill_details.other_amount) as other_amount,
-            sum(split_bill_details.adjustment_amount) as adjustment_amount
+            sum(split_bill_details.adjustment_amount) as adjustment_amount,
+            count(split_bill.sb_id) as total_count
         from
             split_bill_details
         inner join
@@ -3006,6 +3028,7 @@ elseif($page == 'personal_report')
         inner join
             book
             on book.book_id = invoice.book_id
+            and book.user_id = '".$db_mgr_person_id."'
         inner join
             person
             on person.person_id = split_bill_details.person_id
@@ -3023,11 +3046,15 @@ elseif($page == 'personal_report')
     $total_total += (float) $row['other_amount'];    
     $total_total += (float) $row['adjustment_amount'];
     
+    $avg_total = 0;
+    $avg_total = $total_total/$row['total_count'];
+    
     //Load Payment
     $query = "
         select
             payment.payment_type_id,
-            sum(payment.amount) as amount
+            sum(payment.amount) as amount,
+            count(payment.payment_type_id) as total_count
         from
             payment
         inner join
@@ -3037,6 +3064,7 @@ elseif($page == 'personal_report')
         inner join
             book
             on book.book_id = payment.book_id
+            and book.user_id = '".$db_mgr_person_id."'
         group by
             payment.payment_type_id 
     ";
@@ -3054,43 +3082,178 @@ elseif($page == 'personal_report')
         {
             $total_payment -= $row['amount'];    
         }
+        
+        $total_payment_count += $row['total_count'];
     }
     
+    $avg_payment = 0;
+    if($total_payment > 0 && $total_payment_count > 0)
+    {
+        $avg_payment = $total_payment/$total_payment_count;   
+    }   
+    
+    //total book
+    //Load Split BIll
+    $query = "
+        select
+            book.book_id,
+            book.book_title
+        from
+            split_bill_details
+        inner join
+            split_bill
+            on split_bill.sb_id = split_bill_details.sb_id
+        inner join
+            invoice
+            on invoice.invoice_id = split_bill.invoice_id
+        inner join
+            book
+            on book.book_id = invoice.book_id
+            and book.user_id = '".$db_mgr_person_id."'
+        inner join
+            person
+            on person.person_id = split_bill_details.person_id
+            and person.person_id = '".$db_person_id."'
+        group by
+            book.book_id,
+            book.book_title
+    ";
+    $result = array();
+    $row = array();
+    $result = $db->query($query) or die('error');
+    while($row = $result->fetchArray())
+    {
+        $arr_data['book_list'][$row['book_id']]['name'] = $row['book_title'];
+    }
+    $total_book = count($arr_data['book_list']);
+    
     //print_r($arr_data['data']);
+    
+    //Load Split BIll  - Resto
+    $query = "
+        select
+            restaurant.restaurant_id,
+            restaurant.restaurant_name,
+            SUM(split_bill_details.item_amount) as amount
+        from
+            split_bill_details
+        inner join
+            split_bill
+            on split_bill.sb_id = split_bill_details.sb_id
+        inner join
+            invoice
+            on invoice.invoice_id = split_bill.invoice_id
+        inner join
+            book
+            on book.book_id = invoice.book_id
+            and book.user_id = '".$db_mgr_person_id."'
+        inner join
+            person
+            on person.person_id = split_bill_details.person_id
+            and person.person_id = '".$db_person_id."'
+        inner join
+            restaurant
+            on restaurant.restaurant_id = invoice.restaurant_id 
+        group by
+            restaurant.restaurant_id,
+            restaurant.restaurant_name
+        order by
+            SUM(split_bill_details.item_amount) DESC
+        limit
+            5
+    ";
+    $result = array();
+    $row = array();
+    $result = $db->query($query) or die('WQEUIHQWIUEHUIWQEHQWE');
+    $arr_data['resto_list'] = array();
+    while($row = $result->fetchArray())
+    {
+        $arr_data['resto_list'][$row['restaurant_id']]['amount'] = $row['amount'];
+        $arr_data['resto_list'][$row['restaurant_id']]['name'] = $row['restaurant_name'];
+    }
     
     ?>
     <div class="container">
         <div class="row">
             <div class="col-12 col-lg-3">
+                <div class="bg-light br-2 p-2 mt-3">
+                    PIC: <?=$db_mgr_person_name?>
+                </div>
                 <div class="bg-light br-3 p-3 mt-3">
                     <div class="row">
                         <div class="col-4">
                             <img src="<?=APP_URL?>/assets/kirbo_184x184.jpg" class="br-round border-2 bc-muted img-fluid">
                         </div>
                         <div class="col-8">
-                            Puyo, <?=$censor_person_name.' ('.$g_initial.')'?>
+                            Puyo, <?=$db_person_name.' ('.$g_initial.')'?>
+                        </div> 
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-5">
+                        <div class="bg-light br-3 p-3 mt-3">
+                            <b>Book</b>
+                            <h4 class="text-right"><?=parsenumber($total_book,0)?></h4>
                         </div>
                     </div>
-                </div> 
+                    <div class="col-7">
+                        <div class="bg-light br-3 p-3 mt-3">
+                            <b>AVG Pay</b>
+                            <h4 class="text-right"><?=parsenumber($avg_payment,2)?></h4>
+                        </div>
+                    </div>
+                    <div class="col-12 col-sm-12">
+                        <div class="bg-light br-3 p-3 mt-3">
+                            <b>AVG Buy</b>
+                            <h4 class="text-right"><?=parsenumber($avg_total,2)?></h4>
+                        </div>
+                    </div>
+                    <div class="col-12 col-sm-12">
+                        <div class="bg-light br-3 p-3 mt-3">
+                            <b>Top 5 Favorite Restaurant</b>
+                            <?php
+                                $ke = 0;
+                                foreach($arr_data['resto_list'] as $restaurant_id => $value)
+                                {
+                                    $ke++;
+                                ?>
+                                    <h6 class="text-right bg-light-lighten br-2 p-2">
+                                        <small class="color-muted float-left"><?=$ke?></small>
+                                        <?=$value['name']?>
+                                    </h6>    
+                                <?php
+                                }
+                            ?>
+                        </div>
+                    </div>
+                     
+                </div>
+                         
             </div>
             <div class="col-12 col-lg-9">
                 <div class="row">
-                    <div class="col-4">
+                    <div class="col-6 col-sm-3">
                         <div class="bg-light br-3 p-3 mt-3">
-                            <b>Total (Inc. Disc/Tax/Others)</b>
-                            <h4>IDR <?=parsenumber($total_total,2)?></h4>
+                            <b>Total</b>
+                            <h4 class="text-right">IDR<br><?=parsenumber($total_total,2)?></h4>
                         </div>
                     </div>
-                    <div class="col-4">
+                    <div class="col-6 col-sm-3">
                         <div class="br-3 p-3 mt-3" style="background-color: #9fe092;">
                             <b>Payment</b>
-                            <h4>IDR <?=parsenumber($total_payment,2)?></h4>
+                            <h4 class="text-right">IDR<br><?=parsenumber($total_payment,2)?></h4>
                         </div>
                     </div>
-                    <div class="col-4">
+                    <div class="col-6 col-sm-3">
                         <div class="br-3 p-3 mt-3" style="background-color: #e0db92;">
                             <b>Remaining</b>
-                            <h4>IDR <?=parsenumber($total_total-$total_payment,2)?></h4>
+                            <h4 class="text-right">IDR<br><?=parsenumber($total_total-$total_payment,2)?></h4>
+                        </div>
+                    </div>
+                    <div class="col-6 col-sm-3">
+                        <div class="br-3 p-3 mt-3" style="background-color: #faf6bf;">
+                            <b>Percentage</b>
+                            <h4 class="text-right"><br><?=parsenumber($total_payment/$total_total*100,1)?> %</h4>
                         </div>
                     </div>   
                 </div>
