@@ -18,7 +18,7 @@ if($_SERVER['REQUEST_METHOD'] === 'POST')
             
             if($_SESSION['mess'] == '')
             {
-                $query = "select * from user where username = '".$username."'";
+                $query = "select user.*,person.initial_name from user inner join person on person.person_id = user.person_id where username = '".$username."'";
                 $result = $db->query($query);
                 $data = $result->fetchArray();
                 
@@ -48,7 +48,9 @@ if($_SERVER['REQUEST_METHOD'] === 'POST')
                 $_SESSION['ses_username'] = $username; 
                 $_SESSION['ses_user_id'] = $data['user_id'];
                 $_SESSION['ses_role_id'] = $data['role_id'];
+                $_SESSION['ses_person_id'] = $data['person_id'];
                 $_SESSION['ses_display_name'] = $data['display_name'];
+                $_SESSION['ses_initial_name'] = $data['initial_name'];
                 
                 header('location: '.APP_URL.'?page=home');
             }

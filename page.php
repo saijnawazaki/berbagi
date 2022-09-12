@@ -2224,17 +2224,22 @@ elseif($page == 'summary')
     //load person
     $query = "
         select
-            *
+            book.*,
+            user.person_id
         from
             book
+        inner join
+            user
+            on user.user_id = book.user_id
         order by
-            book_title ASC
+            book.book_title ASC
     ";
     $result = $db->query($query);
     $arr_data['list_book'] = array();
     while($row = $result->fetchArray())
     {
         $arr_data['list_book'][$row['book_id']]['user_id'] = $row['user_id'];
+        $arr_data['list_book'][$row['book_id']]['person_id'] = $row['person_id'];
         $arr_data['list_book'][$row['book_id']]['name'] = $row['book_title'];
             
     }
@@ -2645,6 +2650,7 @@ elseif($page == 'summary')
                                 <th>Pay Debit</th>
                                 <th>Pay Kredit</th>
                                 <th>Remaining</th>
+                                <th>Action</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -2674,6 +2680,9 @@ elseif($page == 'summary')
                                         <td class="text-right"><?=parsenumber($arr_data['data_loop'][$person_id]['total_payment_debit'],2)?></td>
                                         <td class="text-right"><?=parsenumber($arr_data['data_loop'][$person_id]['total_payment_kredit'],2)?></td>
                                         <td class="text-right"><?=parsenumber($arr_data['data_loop'][$person_id]['total'],2)?></td>
+                                        <td class="text-center">
+                                            <a target="_blank" href="<?=APP_URL?>?page=personal_report&manager_initial=<?=$ses['initial_name']?>&initial=<?=$arr_data['list_person'][$person_id]['initial_name']?>" class="button bg-success color-white">Share</a>
+                                        </td>
                                     </tr>
                                 <?php    
                                 }
@@ -2693,6 +2702,7 @@ elseif($page == 'summary')
                                 <td class="text-right"><?=parsenumber($arr_data['data_loop_tot']['total_payment_debit'])?></td>
                                 <td class="text-right"><?=parsenumber($arr_data['data_loop_tot']['total_payment_kredit'])?></td>
                                 <td class="text-right"><?=parsenumber($arr_data['data_loop_tot']['total'])?></td>
+                                <td>&nbsp;</td>
                             </tr>
                         </tfoot>
                     </table>
@@ -2833,6 +2843,121 @@ elseif($page == 'personal_report')
 {
     $g_initial = isset($_GET['initial']) ? trim(strtoupper($_GET['initial'])) : '';
     $g_manager_initial = isset($_GET['manager_initial']) ? trim(strtoupper($_GET['manager_initial'])) : '';
+    $g_share_code = isset($_GET['share_code']) ? trim(strtolower($_GET['share_code'])) : '';
+    
+    if($g_share_code == '')
+    {
+        if($g_initial == '' || $g_manager_initial == '')
+        {
+            die('Data Invalid');
+        }
+        else
+        {
+            
+        
+            if(! isset($ses['user_id']))
+            {
+                die('Need Login');    
+            }
+            else
+            {
+                if($ses['user_id'] == 0)
+                {
+                    die('Login Invalid');    
+                }
+                else
+                {
+                    //load person target initial
+                    $query = "
+                        select
+                            person_id
+                        from
+                            person
+                        where
+                            initial_name = '".$g_initial."'
+                    ";
+                    $result = $db->query($query) or die('QWUIEHUQWEHIUQWHEUHQWEQWE');
+                    $row = $result->fetchArray();
+                    $target_person_id = (int) $row['person_id'];
+                    $result = array();
+                    $row = array();
+                    
+                    $token = bin2hex(random_bytes(4));
+                    $query = "
+                        insert into
+                            personal_report_share
+                            (
+                                token_code,
+                                manager_person_id,
+                                person_id,
+                                token_exp_at
+                            )
+                        values
+                            (
+                                '".$token."',
+                                '".$ses['person_id']."',
+                                '".$target_person_id."',
+                                '".(time()+1800)."'
+                            )
+                    ";
+                    
+                    if(! $db->query($query))
+                    {
+                        die('ERROR');
+                    }
+                    else
+                    {
+                        header('location: '.APP_URL.'?page=personal_report&share_code='.$token);
+                    }
+                        
+                }        
+            }
+        } 
+    }
+    else
+    {
+        //check code
+        $query = "
+            select
+                personal_report_share.*,
+                m_person.initial_name as m_initial_name,
+                person.initial_name
+            from
+                personal_report_share
+            left join
+                person as m_person
+                on m_person.person_id = personal_report_share.manager_person_id
+            left join
+                person
+                on person.person_id = personal_report_share.person_id 
+            where
+                personal_report_share.token_code = '".$g_share_code."'
+        ";
+        //echo $query;
+        $result = $db->query($query) or die('QWUIEHUQWEHIUQWHEUHQWEQWE');
+        $row = $result->fetchArray();
+        //print_r($row);
+        if(! $row)
+        {
+            die('Data Invalid');
+        }
+        else
+        {
+            if(time() > $row['token_exp_at'])
+            {
+                die('Expired');
+            }               
+            else
+            {
+                $g_manager_initial = $row['m_initial_name'];    
+                $g_initial = $row['initial_name'];    
+            }
+                   
+        }
+        $result = array();
+        $row = array();
+        
+    }
     
     if($g_initial == '')
     {

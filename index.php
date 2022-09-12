@@ -13,6 +13,8 @@ if($ses_username != '')
     $ses['username'] = $_SESSION['ses_username'];
     $ses['display_name'] = $_SESSION['ses_display_name'];
     $ses['role_id'] = $_SESSION['ses_role_id'];    
+    $ses['person_id'] = $_SESSION['ses_person_id'];    
+    $ses['initial_name'] = $_SESSION['ses_initial_name'];    
 }
 
 
@@ -39,6 +41,13 @@ else
             header('location: '.APP_URL.'?page=fatal_error');    
         }
                 
+    }
+    else
+    {
+        if($page == '')
+        {
+            header('location: '.APP_URL.'?page=home');    
+        }    
     }    
 }
     
