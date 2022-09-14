@@ -103,10 +103,11 @@ elseif($page == 'book')
                 Book
             </a>
         </h1>
-        <hr>
         <div class="text-right">
             <a href="<?=APP_URL.'?page=book_add_edit&book_id=0'?>" class="button bg-success color-white">New</a>
         </div>
+        <hr>
+        
         <div class="row">
             <?php
                 if(count($arr_data['list_book']) == 0)
@@ -124,8 +125,8 @@ elseif($page == 'book')
                     ?>
                         <div class="col-6 col-lg-2 text-center mb-3">
                             <a href="<?=APP_URL.'?page=book_details&book_id='.$book_id?>" class="color-black">
-                                <div class="bg-light br-2" style="height: 200px;">
-                                    
+                                <div class="bg-light br-t-r-2 br-b-r-2 text-left border-1 bc-muted position-relative" style="height: 250px;">
+                                    <span class="position-absolute color-muted me-2 mb-2" style="bottom:0;right:0;"><?=$val['title']?></span>
                                 </div>
                                 <?=$val['title']?>
                                 <div>
@@ -348,10 +349,10 @@ elseif($page == 'invoice')
             </svg>
             Invoice
         </h1>
-        <hr>
         <div class="text-right">
             <a href="<?=APP_URL.'?page=invoice_add_edit&book_id='.$g_book_id.'&invoice_id=0'?>" class="button bg-success color-white">New</a>
         </div>
+        <hr>
         <table>
             <thead>
                 <tr>
@@ -751,10 +752,10 @@ elseif($page == 'restaurant')
                 Restaurant
             </a>
         </h1>
-        <hr>
         <div class="text-right">
             <a href="<?=APP_URL.'?page=restaurant_add_edit&restaurant_id=0'?>" class="button bg-success color-white">New</a>
         </div>
+        <hr> 
         <div class="row">
             <?php
                 if(count($arr_data['list_restaurant']) == 0)
@@ -772,8 +773,8 @@ elseif($page == 'restaurant')
                     ?>
                         <div class="col-6 col-lg-2 text-center mb-3">
                             <a href="<?=APP_URL.'?page=restaurant_menu&restaurant_id='.$restaurant_id?>" class="color-black">
-                                <div class="bg-light br-2" style="height: 200px;">
-                                    
+                                <div class="bg-light br-2 text-left" style="height: 200px;">
+                                    <h4 class="p-3"><?=$val['title']?></h4>    
                                 </div>
                                 <?=$val['title']?>
                                 <div>
@@ -902,10 +903,11 @@ elseif($page == 'restaurant_menu')
                 <?=$data['restaurant_name']?>
             </a>
         </h1>
-        <hr>
         <div class="text-right">
             <a href="<?=APP_URL.'?page=restaurant_menu_add_edit&restaurant_id='.$g_id.'&rm_id=0'?>" class="button bg-success color-white">New</a>
         </div>
+        <hr>
+        
         <div class="row">
             <?php
                 if(count($arr_data['list']) == 0)
@@ -922,8 +924,8 @@ elseif($page == 'restaurant_menu')
                     {
                     ?>
                         <div class="col-6 col-lg-2 text-center mb-3">
-                            <div class="bg-light br-2" style="height: 200px;">
-                                
+                            <div class="bg-light br-2 text-left" style="height: 200px;">
+                                <h4 class="p-3"><?=$val['name']?></h4>    
                             </div>
                             <?=$val['name']?>
                             <div>
@@ -1079,7 +1081,6 @@ elseif($page == 'person')
                 Person
             </a>
         </h1>
-        <hr>
         <div class="text-right">
             <a href="<?=APP_URL.'?page=person_add_edit&person_id=0'?>" class="button bg-success color-white">New</a>
         </div>
@@ -1099,11 +1100,11 @@ elseif($page == 'person')
                     foreach($arr_data['list'] as $id => $val)
                     {
                     ?>
-                        <div class="col-6 col-lg-2 text-center mb-3">
-                            <div class="bg-light br-2" style="height: 200px;">
-                                
+                        <div class="col-4 col-lg-2 text-center mb-3">
+                            <div class="bg-light br-2 position-relative" style="height: 100px;">
+                                <h1 class="position-absolute" style="bottom: 0; right: 0; margin: 10px;"><?=$val['initial_name']?></h1>    
                             </div>
-                            <?=$val['initial_name']?> - <?=$val['name']?>
+                            <?=$val['name']?>
                             <br><small class="color-muted"><?=$val['remarks']?></small>
                             <div>
                                 <small>
@@ -1252,10 +1253,10 @@ elseif($page == 'split_bill')
             </svg>
             Split Bill
         </h1>
-        <hr>
         <div class="text-right">
             <a href="<?=APP_URL.'?page=split_bill_add_edit&book_id='.$g_book_id.'&sb_id=0'?>" class="button bg-success color-white">New</a>
         </div>
+        <hr>
         <table>
             <thead>
                 <tr>
@@ -1520,12 +1521,14 @@ elseif($page == 'split_bill_add_edit')
             </svg>
             Add / Edit
         </h1>
-        <hr>
-       
+        
         <form method="post" target="iframe_post" action="<?=APP_URL?>?page=split_bill_add_edit" accept-charset="utf-8">
             <div class="row">
                 <div class="col-12 col-lg-12">
-                    <button type="button" onclick="reCalc()">ReCalc</button>
+                    <div class="text-right">
+                        <button type="button" onclick="reCalc()">ReCalc</button>
+                    </div>
+                    
                     <hr>
                     <label>Invoice</label>
                     <select id="invoice_id" name="invoice_id">
