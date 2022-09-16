@@ -3175,7 +3175,11 @@ elseif($page == 'personal_report')
     $total_total += (float) $row['adjustment_amount'];
     
     $avg_total = 0;
-    $avg_total = $total_total/$row['total_count'];
+    if($total_total > 0 && $row['total_count'] > 0)
+    {
+        $avg_total = $total_total/$row['total_count'];    
+    }
+        
     
     //Load Payment
     $query = "
@@ -3249,6 +3253,7 @@ elseif($page == 'personal_report')
     $result = array();
     $row = array();
     $result = $db->query($query) or die('error');
+    $arr_data['book_list'] = array();
     while($row = $result->fetchArray())
     {
         $arr_data['book_list'][$row['book_id']]['name'] = $row['book_title'];
@@ -3381,7 +3386,7 @@ elseif($page == 'personal_report')
                     <div class="col-6 col-sm-3">
                         <div class="br-3 p-3 mt-3" style="background-color: #faf6bf;">
                             <b>Percentage</b>
-                            <h4 class="text-right"><br><?=parsenumber($total_payment/$total_total*100,1)?> %</h4>
+                            <h4 class="text-right"><br><?=($total_payment > 0 && $total_total > 0 ? parsenumber($total_payment/$total_total*100,1) : 0)?> %</h4>
                         </div>
                     </div>   
                 </div>
@@ -3422,12 +3427,12 @@ elseif($page == 'personal_report')
                                             foreach($arr_data['data'][$date] as $book_id => $value)
                                             {
                                                 $total_sb = 0;
-                                                $total_sb += $arr_data['data'][$date][$book_id]['split_bill']['item_amount'];
-                                                $total_sb += $arr_data['data'][$date][$book_id]['split_bill']['tax_amount'];
-                                                $total_sb -= $arr_data['data'][$date][$book_id]['split_bill']['discount_amount'];
-                                                $total_sb += $arr_data['data'][$date][$book_id]['split_bill']['delivery_amount'];
-                                                $total_sb += $arr_data['data'][$date][$book_id]['split_bill']['other_amount'];
-                                                $total_sb += $arr_data['data'][$date][$book_id]['split_bill']['adjustment_amount'];
+                                                $total_sb += isset($arr_data['data'][$date][$book_id]['split_bill']['item_amount']) ? $arr_data['data'][$date][$book_id]['split_bill']['item_amount'] : 0;
+                                                $total_sb += isset($arr_data['data'][$date][$book_id]['split_bill']['tax_amount']) ? $arr_data['data'][$date][$book_id]['split_bill']['tax_amount'] : 0;
+                                                $total_sb -= isset($arr_data['data'][$date][$book_id]['split_bill']['discount_amount']) ? $arr_data['data'][$date][$book_id]['split_bill']['discount_amount'] : 0;
+                                                $total_sb += isset($arr_data['data'][$date][$book_id]['split_bill']['delivery_amount']) ? $arr_data['data'][$date][$book_id]['split_bill']['delivery_amount'] : 0;
+                                                $total_sb += isset($arr_data['data'][$date][$book_id]['split_bill']['other_amount']) ? $arr_data['data'][$date][$book_id]['split_bill']['other_amount'] : 0;
+                                                $total_sb += isset($arr_data['data'][$date][$book_id]['split_bill']['adjustment_amount']) ? $arr_data['data'][$date][$book_id]['split_bill']['adjustment_amount'] : 0;
                                                 
                                                 $total_remaining = 0;
                                                 $total_remaining += $total_sb;
