@@ -968,6 +968,62 @@ if($_SERVER['REQUEST_METHOD'] === 'POST')
                     
         }    
     }
+    elseif($page == 'payment_delete')
+    {
+        if(isset($_POST['submit']))
+        {
+            $payment_id = (int) $_POST['payment_id'];    
+            $book_id = (int) $_POST['book_id'];    
+            $delete = (int) $_POST['delete'];    
+            
+            $_SESSION['mess'] = '';
+            
+            if($delete == 0)
+            {
+                $_SESSION['mess'] .= 'No Delete';
+                header('location: '.APP_URL.'?page=payment&&book_id='.$book_id);   
+            }
+            
+            if($_SESSION['mess'] == '')
+            {
+                if($payment_id == 0)
+                {
+                    $_SESSION['mess'] .= 'Payment ID Invalid';
+                    header('location: '.APP_URL.'?page=payment&&book_id='.$book_id);    
+                }
+                else
+                {
+                    $query = "
+                        DELETE FROM
+                            payment
+                        WHERE
+                            payment_id = '".$payment_id."'
+                    ";
+                    
+                    if($db->query($query))
+                    {
+                        if($payment_id == 0)
+                        {
+                            $_SESSION['mess'] .= 'Payment ID Invalid';
+                            header('location: '.APP_URL.'?page=payment&&book_id='.$book_id);    
+                        }
+                        else
+                        {
+                            $_SESSION['mess'] .= 'DELETE Successfully';
+                            header('location: '.APP_URL.'?page=payment&book_id='.$book_id);
+                        } 
+                    }
+                    else
+                    {
+                        $_SESSION['mess'] .= 'DELETE Failed';
+                      
+                    }        
+                }
+                    
+            }
+                    
+        }    
+    }
     else
     {
         header('location: '.APP_URL.'?page=fatal_error');
