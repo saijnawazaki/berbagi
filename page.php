@@ -1235,15 +1235,15 @@ elseif($page == 'split_bill')
             restaurant
             on restaurant.restaurant_id = invoice.restaurant_id 
         order by
-            split_bill.created_at DESC
+            split_bill.sb_date DESC
     ";
     $result = $db->query($query);    
    
     while($row = $result->fetchArray())
     {
-        $arr_data['list_invoice'][$row['created_at']][$row['sb_id']]['inv_code'] = 'INV/'.$row['book_id'].'/'.date('Ymd',$row['inv_created_at']).'/'.$row['restaurant_id'].'/'.$row['invoice_id'];    
-        $arr_data['list_invoice'][$row['created_at']][$row['sb_id']]['sb_code'] = 'SB/'.$row['book_id'].'/'.date('Ymd',$row['inv_created_at']).'/'.$row['restaurant_id'].'/'.$row['invoice_id'].'/'.$row['sb_id'];    
-        $arr_data['list_invoice'][$row['created_at']][$row['sb_id']]['restaurant_name'] = $row['restaurant_name'];    
+        $arr_data['list_invoice'][$row['sb_date']][$row['sb_id']]['inv_code'] = 'INV/'.$row['book_id'].'/'.date('Ymd',$row['inv_created_at']).'/'.$row['restaurant_id'].'/'.$row['invoice_id'];    
+        $arr_data['list_invoice'][$row['sb_date']][$row['sb_id']]['sb_code'] = 'SB/'.$row['book_id'].'/'.date('Ymd',$row['inv_created_at']).'/'.$row['restaurant_id'].'/'.$row['invoice_id'].'/'.$row['sb_id'];    
+        $arr_data['list_invoice'][$row['sb_date']][$row['sb_id']]['restaurant_name'] = $row['restaurant_name'];    
     }
 ?>
     <div class="container">
@@ -3690,10 +3690,50 @@ elseif($page == 'prediction_board')
     while($row = $result->fetchArray())
     {
         $day = date('D',$row['sb_date']);
-        $data_person_item[$day][$row['person_id']][$row['sb_id']] = $row['sb_id'];    
+        $arr_data['rm_list'][$row['rm_id']]['name'] = $row['rm_name'];
+        $data_person_item[$day][$row['person_id']][$row['sb_id']][$row['rm_id']] = $row['rm_id'];    
+        $data_item[$day][$row['rm_id']][$row['sb_id'].'_'.$row['person_id']] = $row['sb_id'];    
     }
     
-    print('<pre>'.print_r($data_person_item,true).'</pre>');
+    $arr_list['day']['Mon']['name'] = 'Mon';
+    $arr_list['day']['Tue']['name'] = 'Tue';
+    $arr_list['day']['Wed']['name'] = 'Wed';
+    $arr_list['day']['Thu']['name'] = 'Thu';
+    $arr_list['day']['Fri']['name'] = 'Fri';
+    $arr_list['day']['Sat']['name'] = 'Sat';
+    $arr_list['day']['Sun']['name'] = 'Sun';
+    
+    //get day most buy
+    foreach($data_item as $day => $value)
+    {
+        foreach($data_item[$day] as $rm_id => $value)
+        {
+            $arr_data['finalmix'][$day][count($data_item[$day][$rm_id])][$rm_id] = 1;   
+        }    
+    }
+    
+    foreach($arr_data['finalmix'] as $day => $value) 
+    {
+        krsort($arr_data['finalmix'][$day]);    
+    }
+    
+    foreach($arr_data['finalmix'] as $day => $value) 
+    {
+        foreach($arr_data['finalmix'][$day] as $score => $value) 
+        {
+            foreach($arr_data['finalmix'][$day][$score] as $rm_id => $value) 
+            {
+                if(!isset($arr_data['final_finalmix'][$day]['rm_id']))
+                {
+                    $arr_data['final_finalmix'][$day]['rm_id'] = $rm_id;   
+                    $arr_data['final_finalmix'][$day]['rm_name'] = $arr_data['rm_list'][$rm_id]['name'];   
+                }
+                        
+            }    
+        }    
+    }
+    
+    //print('<pre>'.print_r($data_person_item,true).'</pre>');
 ?>
     <div class="container">
         <h1>
@@ -3706,5 +3746,27 @@ elseif($page == 'prediction_board')
             </a>
         </h1>
         <hr>
+        <table>
+            <tr>
+                <?php
+                foreach($arr_list['day'] as $day => $value)
+                {
+                ?>
+                    <td><?=$day?></td>
+                <?php    
+                }
+                ?>
+            </tr>
+            <tr>
+                <?php
+                foreach($arr_list['day'] as $day => $value)
+                {
+                ?>
+                    <td><?=isset($arr_data['final_finalmix'][$day]['rm_name']) ? $arr_data['final_finalmix'][$day]['rm_name'] : '-'?></td>
+                <?php    
+                }
+                ?>
+            </tr>
+        </table>
 <?php    
 }
