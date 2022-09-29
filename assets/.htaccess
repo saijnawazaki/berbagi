@@ -1,2 +1,1 @@
-Order Allow,Deny
-allow from 127.0.0.1
+RewriteRule .*\.(db)$ - [F]

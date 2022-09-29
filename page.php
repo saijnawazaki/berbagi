@@ -3717,21 +3717,7 @@ elseif($page == 'prediction_board')
         krsort($arr_data['finalmix'][$day]);    
     }
     
-    foreach($arr_data['finalmix'] as $day => $value) 
-    {
-        foreach($arr_data['finalmix'][$day] as $score => $value) 
-        {
-            foreach($arr_data['finalmix'][$day][$score] as $rm_id => $value) 
-            {
-                if(!isset($arr_data['final_finalmix'][$day]['rm_id']))
-                {
-                    $arr_data['final_finalmix'][$day]['rm_id'] = $rm_id;   
-                    $arr_data['final_finalmix'][$day]['rm_name'] = $arr_data['rm_list'][$rm_id]['name'];   
-                }
-                        
-            }    
-        }    
-    }
+    
     
     //print('<pre>'.print_r($data_person_item,true).'</pre>');
 ?>
@@ -3761,9 +3747,24 @@ elseif($page == 'prediction_board')
                 <?php
                 foreach($arr_list['day'] as $day => $value)
                 {
-                ?>
-                    <td><?=isset($arr_data['final_finalmix'][$day]['rm_name']) ? $arr_data['final_finalmix'][$day]['rm_name'] : '-'?></td>
-                <?php    
+                    ?>
+                        <td>
+                            <?php
+                            if(isset($arr_data['finalmix'][$day]))
+                            {   
+                                foreach($arr_data['finalmix'][$day] as $score => $value) 
+                                {
+                                    foreach($arr_data['finalmix'][$day][$score] as $rm_id => $value) 
+                                    {
+                                        echo '<div class="card border-0 bg-light p-2 mb-2 br-2">'.$arr_data['rm_list'][$rm_id]['name'].'</div>';       
+                                    }    
+                                }    
+                            }
+                            ?>
+                        </td>
+                    <?php
+                    
+                            
                 }
                 ?>
             </tr>
