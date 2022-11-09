@@ -2821,7 +2821,8 @@ elseif($page == 'summary')
                     $query = "
                         select
                             split_bill_details.*,
-                            split_bill.created_at
+                            split_bill.sb_date,
+                            restaurant.restaurant_name
                         from
                             split_bill_details
                         inner join
@@ -2832,9 +2833,14 @@ elseif($page == 'summary')
                             on invoice.invoice_id = split_bill.invoice_id
                             and invoice.book_id = '".$g_book_id."'
                         inner join
+                            restaurant
+                            on restaurant.restaurant_id = invoice.restaurant_id 
+                        inner join
                             person
                             on person.person_id = split_bill_details.person_id
-                            ".$where_person_id." 
+                            ".$where_person_id."
+                        order by
+                            split_bill.sb_date DESC 
                     ";
                     $result = $db->query($query);
                     
@@ -2848,7 +2854,7 @@ elseif($page == 'summary')
                         $total_amount += (float) $row['delivery_amount'];   
                         $total_amount += (float) $row['other_amount'];   
                         $total_amount += (float) $row['adjustment_amount'];  
-                        $arr_data['data_loop'][$row['created_at']]['SPLIT_BILL:'.$row['sb_id']][$row['person_id']]['amount'] = $total_amount; 
+                        $arr_data['data_loop'][$row['sb_date']][$row['restaurant_name'].' - SPLIT_BILL:'.$row['sb_id']][$row['person_id']]['amount'] = $total_amount; 
                     }
                     
                     //Load Payment
@@ -2870,14 +2876,18 @@ elseif($page == 'summary')
                     {
                         if($row['payment_type_id'] == 1)
                         {
-                            $arr_data['data_loop'][$row['created_at']]['PAYMENT:'.$row['payment_id']][$row['person_id']]['amount'] = $row['amount']*-1;   
+                            $arr_data['data_loop'][$row['payment_date']]['Debit - PAYMENT:'.$row['payment_id']][$row['person_id']]['amount'] = $row['amount']*-1;   
                         }
                         else
                         {
-                            $arr_data['data_loop'][$row['created_at']]['PAYMENT:'.$row['payment_id']][$row['person_id']]['amount'] = $row['amount'];   
+                            $arr_data['data_loop'][$row['payment_date']]['Kredit - PAYMENT:'.$row['payment_id']][$row['person_id']]['amount'] = $row['amount'];   
                         }
                             
                     }
+                    
+                    //krsort($arr_data['data_loop']);
+                    ksort($arr_data['data_loop']);
+                    //foreach($arr_data['data_loop'])
 
                     //print('<pre>'.print_r($arr_data['data_loop'],true).'</pre>');
                   
@@ -2890,6 +2900,7 @@ elseif($page == 'summary')
                                 <th>Type</th>
                                 <th>Name</th>
                                 <th>Amount</th>
+                                <th>End Balance</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -2904,20 +2915,23 @@ elseif($page == 'summary')
                             }
                             else
                             {
+                                $end_balance = 0;
                                 foreach($arr_data['data_loop'] as $date => $value)
                                 {
-                                    $show_date = date('Y-m-d H:i:s', $date);
+                                    $show_date = date('Y-m-d', $date);
                                     foreach($arr_data['data_loop'][$date] as $type_id => $value)
                                     {
                                         $show_type = $type_id;
                                         foreach($arr_data['data_loop'][$date][$type_id] as $person_id => $value)
                                         {
+                                            $end_balance += $value['amount'];
                                         ?>
                                             <tr>
                                                 <td><?=$show_date?></td>
                                                 <td><?=$show_type?></td>
                                                 <td><?=$v_opt_initial_only ? $arr_data['list_person'][$person_id]['initial_name'] : $arr_data['list_person'][$person_id]['name'].' :: '.$person_id?></td>
                                                 <td class="text-right"><?=parsenumber($value['amount'],2)?></td>
+                                                <td class="text-right"><?=parsenumber($end_balance,2)?></td>
 
                                             </tr>
                                         <?php 
