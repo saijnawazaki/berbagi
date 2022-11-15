@@ -18,7 +18,7 @@ elseif($page == 'login')
                 <div class="col-12 col-lg-3">
                     <div class="border-1 bc-muted p-2 br-2 mt-2">
                         <label>Username</label>
-                        <input type="text" name="username" value="">
+                        <input type="text" name="username" value="" autofocus="">
                         <label>Password</label>
                         <input type="password" name="password" value="">
                         <hr>
@@ -777,11 +777,19 @@ elseif($page == 'restaurant')
                 {
                     foreach($arr_data['list_restaurant'] as $restaurant_id => $val)
                     {
+                        $title_mod = $val['title'];             
+                        $title_len = strlen($val['title']);
+                        $title_mod = substr($val['title'],0,30);
+                        
+                        if($title_len > 30)
+                        {
+                            $title_mod .= '...';   
+                        } 
                     ?>
                         <div class="col-6 col-lg-2 text-center mb-3">
                             <a href="<?=APP_URL.'?page=restaurant_menu&restaurant_id='.$restaurant_id?>" class="color-black">
                                 <div class="bg-light br-2 text-left" style="height: 200px;">
-                                    <h4 class="p-3"><?=$val['title']?></h4>    
+                                    <h4 class="p-3"><?=$title_mod?></h4>    
                                 </div>
                                 <?=$val['title']?>
                                 <div>
@@ -929,10 +937,18 @@ elseif($page == 'restaurant_menu')
                 {
                     foreach($arr_data['list'] as $id => $val)
                     {
+                        $title_mod = $val['name'];             
+                        $title_len = strlen($val['name']);
+                        $title_mod = substr($title_mod,0,30);
+                        
+                        if($title_len > 30)
+                        {
+                            $title_mod .= '...';   
+                        }
                     ?>
                         <div class="col-6 col-lg-2 text-center mb-3">
                             <div class="bg-light br-2 text-left" style="height: 200px;">
-                                <h4 class="p-3"><?=$val['name']?></h4>    
+                                <h4 class="p-3"><?=$title_mod?></h4>    
                             </div>
                             <?=$val['name']?>
                             <div>
@@ -2963,6 +2979,7 @@ elseif($page == 'personal_report')
     $g_initial = isset($_GET['initial']) ? trim(strtoupper($_GET['initial'])) : '';
     $g_manager_initial = isset($_GET['manager_initial']) ? trim(strtoupper($_GET['manager_initial'])) : '';
     $g_share_code = isset($_GET['share_code']) ? trim(strtolower($_GET['share_code'])) : '';
+    $g_backstep = isset($_GET['backstep']) ? (int) $_GET['backstep'] : 0;
     
     if($g_share_code == '')
     {
@@ -3149,14 +3166,18 @@ elseif($page == 'personal_report')
     $arr_data['book'] = array();
     
     //this week
-    if(date('w') >= 5)
+    /*if(date('w') >= 5)
     {
         $today = strtotime('monday this week');
     }
     else
     {
         $today = strtotime('monday last week');
-    }
+    }*/
+    
+    $today = strtotime('monday this week');
+    $today -= ($g_backstep*86400)*7;
+    
     $from_date_week = $today;
     $to_date_week = $from_date_week+(86400*6); 
     
@@ -3502,7 +3523,7 @@ elseif($page == 'personal_report')
                     </div>
                     <div class="col-6 col-sm-3">
                         <div class="br-3 p-3 mt-3" style="background-color: #faf6bf;">
-                            <b>Percentage</b>
+                            <b>Percentage</b>      
                             <h4 class="text-right"><br><?=($total_payment > 0 && $total_total > 0 ? parsenumber($total_payment/$total_total*100,1) : 0)?> %</h4>
                         </div>
                     </div>   
@@ -3510,7 +3531,9 @@ elseif($page == 'personal_report')
                 <div class="col-12">
                     <div class="bg-light br-3 p-3 mt-3">
                         <b>History</b><br>
-                        <small class="color-muted"><?=date('D, d-m-Y',$from_date_week)?> - <?=date('D, d-m-Y',$to_date_week)?></small>
+                        <small class="color-muted">
+                            <?=date('D, d-m-Y',$from_date_week)?> - <?=date('D, d-m-Y',$to_date_week)?>
+                        </small>
                         <div class="overflow-auto">
                             <table>
                                 <tr>
@@ -3524,6 +3547,12 @@ elseif($page == 'personal_report')
                                     <th>Total</th>
                                 </tr>
                                 <?php
+                                    $tot_item = 0;
+                                    $tot_others = 0;
+                                    $tot_total = 0;
+                                    $tot_debit = 0;
+                                    $tot_kredit = 0;
+                                    $tot_total_total = 0;
                                     if(count($arr_data['data']) == 0)
                                     {
                                     ?>
@@ -3557,6 +3586,13 @@ elseif($page == 'personal_report')
                                                 $total_remaining += $total_sb;
                                                 $total_remaining -= isset($arr_data['data'][$date][$book_id]['payment'][1]['amount']) ? $arr_data['data'][$date][$book_id]['payment'][1]['amount'] : 0;
                                                 $total_remaining += isset($arr_data['data'][$date][$book_id]['payment'][2]['amount']) ? $arr_data['data'][$date][$book_id]['payment'][2]['amount'] : 0; 
+                                                
+                                                $tot_item += isset($arr_data['data'][$date][$book_id]['split_bill']['item_amount']) ? $arr_data['data'][$date][$book_id]['split_bill']['item_amount'] : 0;
+                                                $tot_others += $total_others;
+                                                $tot_total += $total_sb;
+                                                $tot_debit += isset($arr_data['data'][$date][$book_id]['payment'][1]['amount']) ? $arr_data['data'][$date][$book_id]['payment'][1]['amount'] : 0;
+                                                $tot_kredit += isset($arr_data['data'][$date][$book_id]['payment'][2]['amount']) ? $arr_data['data'][$date][$book_id]['payment'][2]['amount'] : 0;
+                                                $tot_total_total += $total_remaining;
                                             ?>
                                                 <tr>
                                                     <td><?=$show_date?></td>
@@ -3602,8 +3638,35 @@ elseif($page == 'personal_report')
                                             
                                     }
                                 ?>
+                                <tr>
+                                    <td class="text-right" colspan="2">Total</td>
+                                    <td class="text-right"><?=parsenumber($tot_item,2)?></td>
+                                    <td class="text-right"><?=parsenumber($tot_others,2)?></td>
+                                    <td class="text-right"><?=parsenumber($tot_total,2)?></td>
+                                    <td class="text-right"><?=parsenumber($tot_debit,2)?></td>
+                                    <td class="text-right"><?=parsenumber($tot_kredit,2)?></td>
+                                    <td class="text-right"><?=parsenumber($tot_total_total,2)?></td>
+                                </tr>
                             </table>
                         </div>
+                        <div class="row">
+                            <div class="col-6 text-left">
+                                <a href="<?=APP_URL.'?page=personal_report&share_code='.$g_share_code.'&backstep='.($g_backstep+1)?>">Show Prev Week</a>
+                        
+                            </div>
+                            <div class="col-6 text-right">
+                            <?php
+                            if($g_backstep > 0)
+                            {
+                            ?>
+                                <a href="<?=APP_URL.'?page=personal_report&share_code='.$g_share_code.'&backstep='.($g_backstep-1)?>">Show Next Week</a>
+                            
+                            <?php    
+                            }
+                        ?>
+                            </div>
+                        </div>
+                        
                     </div>
                 </div>
             </div>
