@@ -3540,8 +3540,6 @@ elseif($page == 'personal_report')
                                     <th>Date</th>
                                     <th>Book</th>
                                     <th>Item</th>
-                                    <th>Others</th>
-                                    <th>Total</th>
                                     <th>Debit</th>
                                     <th>Kredit</th>
                                     <th>Total</th>
@@ -3597,7 +3595,6 @@ elseif($page == 'personal_report')
                                                 <tr>
                                                     <td><?=$show_date?></td>
                                                     <td><?=$arr_data['book'][$book_id]['name']?></td>
-                                                    <td class="text-right"><?=isset($arr_data['data'][$date][$book_id]['split_bill']['item_amount']) ? parsenumber($arr_data['data'][$date][$book_id]['split_bill']['item_amount'],2) : ''?></td>
                                                     <td class="text-right">
                                                         <?php
                                                             $js = '
@@ -3611,9 +3608,11 @@ elseif($page == 'personal_report')
                                                                 }
                                                             ';
                                                         ?>
-                                                        <u onclick="<?=$js?>" class="cursor-pointer"><?=parsenumber($total_others,2)?></u>
+                                                        <u onclick="<?=$js?>" class="cursor-pointer"><?=parsenumber($total_sb,2)?></u>
                                                         <div id="data_other_panel__<?=$date?>__<?=$book_id?>" style="display: none;">
-                                                            <b>Tax</b>
+                                                            <b>Total</b>
+                                                            <br><?=isset($arr_data['data'][$date][$book_id]['split_bill']['item_amount']) ? parsenumber($arr_data['data'][$date][$book_id]['split_bill']['item_amount'],2) : ''?>
+                                                            <br><b>Tax</b>
                                                             <br><?=isset($arr_data['data'][$date][$book_id]['split_bill']['tax_amount']) ? parsenumber($arr_data['data'][$date][$book_id]['split_bill']['tax_amount'],2) : ''?>
                                                             <br><b>Discount</b>
                                                             <br><?=isset($arr_data['data'][$date][$book_id]['split_bill']['discount_amount']) ? parsenumber($arr_data['data'][$date][$book_id]['split_bill']['discount_amount'],2) : ''?>
@@ -3626,7 +3625,6 @@ elseif($page == 'personal_report')
                                                         
                                                         </div>
                                                     </td>
-                                                    <td class="text-right"><?=parsenumber($total_sb,2)?></td>
                                                     <td class="text-right"><?=isset($arr_data['data'][$date][$book_id]['payment'][1]['amount']) ? '<span class="color-success">-'.parsenumber($arr_data['data'][$date][$book_id]['payment'][1]['amount'],2).'</span>' : ''?></td>
                                                     <td class="text-right"><?=isset($arr_data['data'][$date][$book_id]['payment'][2]['amount']) ? '<span class="color-danger">+'.parsenumber($arr_data['data'][$date][$book_id]['payment'][2]['amount'],2).'</span>' : ''?></td>
                                                     <td class="text-right"><?=parsenumber($total_remaining,2)?></td>
@@ -3640,8 +3638,6 @@ elseif($page == 'personal_report')
                                 ?>
                                 <tr>
                                     <td class="text-right" colspan="2">Total</td>
-                                    <td class="text-right"><?=parsenumber($tot_item,2)?></td>
-                                    <td class="text-right"><?=parsenumber($tot_others,2)?></td>
                                     <td class="text-right"><?=parsenumber($tot_total,2)?></td>
                                     <td class="text-right"><?=parsenumber($tot_debit,2)?></td>
                                     <td class="text-right"><?=parsenumber($tot_kredit,2)?></td>
