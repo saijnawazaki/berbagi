@@ -3231,6 +3231,63 @@ elseif($page == 'personal_report')
         $arr_data['data'][$row['sb_date']][$row['book_id']]['split_bill']['adjustment_amount'] = (float) $row['adjustment_amount'];    
     }
     
+    //Load Split BIll DET
+    $query = "
+        select
+            book.book_id,
+            book.book_title,
+            split_bill.sb_date,
+            restaurant.restaurant_id,
+            restaurant.restaurant_name,
+            sum(split_bill_details.item_amount) as item_amount,
+            sum(split_bill_details.tax_amount) as tax_amount,
+            sum(split_bill_details.discount_amount) as discount_amount,
+            sum(split_bill_details.delivery_amount) as delivery_amount,
+            sum(split_bill_details.other_amount) as other_amount,
+            sum(split_bill_details.adjustment_amount) as adjustment_amount
+        from
+            split_bill_details
+        inner join
+            split_bill
+            on split_bill.sb_id = split_bill_details.sb_id
+        inner join
+            invoice
+            on invoice.invoice_id = split_bill.invoice_id
+        inner join
+            restaurant
+            on restaurant.restaurant_id = invoice.restaurant_id 
+        inner join
+            book
+            on book.book_id = invoice.book_id
+            and book.user_id = '".$db_mgr_person_id."'
+        inner join
+            person
+            on person.person_id = split_bill_details.person_id
+            and person.person_id = '".$db_person_id."'
+        where
+            split_bill.sb_date between '".$from_date_week."' AND '".$to_date_week."' 
+        group by
+            book.book_id,
+            book.book_title,
+            split_bill.sb_date,
+            restaurant.restaurant_id,
+            restaurant.restaurant_name
+    ";
+    $result = $db->query($query) or die('error');
+    
+    while($row = $result->fetchArray())
+    {
+        $arr_data['book'][$row['book_id']]['name'] = $row['book_title'];    
+        $arr_data['restaurant'][$row['restaurant_id']]['name'] = $row['restaurant_name'];    
+        
+        $arr_data['data_det'][$row['sb_date']][$row['book_id']][$row['restaurant_id']]['item_amount'] = (float) $row['item_amount'];    
+        $arr_data['data_det'][$row['sb_date']][$row['book_id']][$row['restaurant_id']]['tax_amount'] = (float) $row['tax_amount'];    
+        $arr_data['data_det'][$row['sb_date']][$row['book_id']][$row['restaurant_id']]['discount_amount'] = (float) $row['discount_amount'];    
+        $arr_data['data_det'][$row['sb_date']][$row['book_id']][$row['restaurant_id']]['delivery_amount'] = (float) $row['delivery_amount'];    
+        $arr_data['data_det'][$row['sb_date']][$row['book_id']][$row['restaurant_id']]['other_amount'] = (float) $row['other_amount'];    
+        $arr_data['data_det'][$row['sb_date']][$row['book_id']][$row['restaurant_id']]['adjustment_amount'] = (float) $row['adjustment_amount'];    
+    }
+    
     //Load Payment
     $query = "
         select
@@ -3610,19 +3667,85 @@ elseif($page == 'personal_report')
                                                         ?>
                                                         <u onclick="<?=$js?>" class="cursor-pointer"><?=parsenumber($total_sb,2)?></u>
                                                         <div id="data_other_panel__<?=$date?>__<?=$book_id?>" style="display: none;">
-                                                            <b>Total</b>
-                                                            <br><?=isset($arr_data['data'][$date][$book_id]['split_bill']['item_amount']) ? parsenumber($arr_data['data'][$date][$book_id]['split_bill']['item_amount'],2) : ''?>
-                                                            <br><b>Tax</b>
-                                                            <br><?=isset($arr_data['data'][$date][$book_id]['split_bill']['tax_amount']) ? parsenumber($arr_data['data'][$date][$book_id]['split_bill']['tax_amount'],2) : ''?>
-                                                            <br><b>Discount</b>
-                                                            <br><?=isset($arr_data['data'][$date][$book_id]['split_bill']['discount_amount']) ? parsenumber($arr_data['data'][$date][$book_id]['split_bill']['discount_amount'],2) : ''?>
-                                                            <br><b>Delivery</b>
-                                                            <br><?=isset($arr_data['data'][$date][$book_id]['split_bill']['delivery_amount']) ? parsenumber($arr_data['data'][$date][$book_id]['split_bill']['delivery_amount'],2) : ''?>
-                                                            <br><b>Others</b>
-                                                            <br><?=isset($arr_data['data'][$date][$book_id]['split_bill']['other_amount']) ? parsenumber($arr_data['data'][$date][$book_id]['split_bill']['other_amount'],2) : ''?>
-                                                            <br><b>Adjustment</b>
-                                                            <br><?=isset($arr_data['data'][$date][$book_id]['split_bill']['adjustment_amount']) ? parsenumber($arr_data['data'][$date][$book_id]['split_bill']['adjustment_amount'],2) : ''?>
-                                                        
+                                                            <div class="row">
+                                                                <div class="col-4">
+                                                                    <b>Total</b>
+                                                                    <br><?=isset($arr_data['data'][$date][$book_id]['split_bill']['item_amount']) ? parsenumber($arr_data['data'][$date][$book_id]['split_bill']['item_amount'],2) : ''?>
+                                                                </div>
+                                                                <div class="col-4">
+                                                                    <b>Tax</b>
+                                                                    <br><?=isset($arr_data['data'][$date][$book_id]['split_bill']['tax_amount']) ? parsenumber($arr_data['data'][$date][$book_id]['split_bill']['tax_amount'],2) : ''?>
+                                                                </div>
+                                                                <div class="col-4">
+                                                                    <b>Discount</b>
+                                                                    <br><?=isset($arr_data['data'][$date][$book_id]['split_bill']['discount_amount']) ? parsenumber($arr_data['data'][$date][$book_id]['split_bill']['discount_amount'],2) : ''?>
+                                                                </div>
+                                                                <div class="col-4">
+                                                                    <b>Delivery</b>
+                                                                    <br><?=isset($arr_data['data'][$date][$book_id]['split_bill']['delivery_amount']) ? parsenumber($arr_data['data'][$date][$book_id]['split_bill']['delivery_amount'],2) : ''?>
+                                                                </div>
+                                                                <div class="col-4">
+                                                                    <b>Others</b>
+                                                                    <br><?=isset($arr_data['data'][$date][$book_id]['split_bill']['other_amount']) ? parsenumber($arr_data['data'][$date][$book_id]['split_bill']['other_amount'],2) : ''?>
+                                                                </div>
+                                                                <div class="col-4">
+                                                                    <b>Adjustment</b>
+                                                                    <br><?=isset($arr_data['data'][$date][$book_id]['split_bill']['adjustment_amount']) ? parsenumber($arr_data['data'][$date][$book_id]['split_bill']['adjustment_amount'],2) : ''?>
+                                                                </div>
+                                                                <div class="col-4">
+                                                                    <a href="javascript:void(0)" class="button" data-toggle="show" aria-controls="modal_details_<?=$date?>_<?=$book_id?>">Details</a>
+                                                                </div>    
+                                                            </div>
+                                                        </div>
+                                                        <div role="alert" id="modal_details_<?=$date?>_<?=$book_id?>" class="position-fixed top-0 left-0 width-fluid height-vh hide">
+                                                          <div class="position-relative width-fluid height-vh d-flex justify-content-center">
+                                                            <div class="bg-dark position-absolute width-fluid height-vh top-0 left-0 opacity-3" data-toggle="hide" aria-controls="modal_details_<?=$date?>_<?=$book_id?>"></div>
+                                                            <div class="text-left bg-light bc-muted color-dark br-2 p-3 position-absolute mt-3 ms-auto me-auto mb-auto">
+                                                              <button type="button" class="button-close float-right" data-toggle="hide" aria-controls="modal_details_<?=$date?>_<?=$book_id?>"></button>
+                                                              <h4>Details</h4>
+                                                              <hr>
+                                                              <div class="overflow-auto">
+                                                              <table>
+                                                                <tr>
+                                                                    <th>Restaurant</th>
+                                                                    <th>Item</th>
+                                                                    <th>Tax</th>
+                                                                    <th>Disc</th>
+                                                                    <th>Del</th>
+                                                                    <th>Other</th>
+                                                                    <th>Adj</th>
+                                                                    <th>Total</th>
+                                                                </tr>
+                                                                <?php
+                                                                
+                                                                foreach($arr_data['data_det'][$date][$book_id] as $restaurant_id => $val)
+                                                                {
+                                                                    $det_item = $val['item_amount'];
+                                                                    $det_tax = $val['tax_amount'];
+                                                                    $det_disc = $val['discount_amount'];
+                                                                    $det_del = $val['delivery_amount'];
+                                                                    $det_other = $val['other_amount'];
+                                                                    $det_adj = $val['adjustment_amount'];
+                                                                    $det_sb = $det_item+$det_tax-$det_disc+$det_del+$det_other+$det_adj;
+                                                                    ?>
+                                                                    <tr>
+                                                                        <td><?=$arr_data['restaurant'][$restaurant_id]['name'].' :: '.$restaurant_id?></td>
+                                                                        <td><?=parsenumber($det_item,2)?></td>
+                                                                        <td><?=parsenumber($det_tax,2)?></td>
+                                                                        <td><?=parsenumber($det_disc,2)?></td>
+                                                                        <td><?=parsenumber($det_del,2)?></td>
+                                                                        <td><?=parsenumber($det_other,2)?></td>
+                                                                        <td><?=parsenumber($det_adj,2)?></td>
+                                                                        <td><?=parsenumber($det_sb,2)?></td>
+                                                                    </tr>
+                                                                    <?php
+                                                                }
+                                                              ?>
+                                                              </table>
+                                                              </div>    
+                                                                
+                                                            </div>
+                                                          </div>
                                                         </div>
                                                     </td>
                                                     <td class="text-right"><?=isset($arr_data['data'][$date][$book_id]['payment'][1]['amount']) ? '<span class="color-success">-'.parsenumber($arr_data['data'][$date][$book_id]['payment'][1]['amount'],2).'</span>' : ''?></td>
