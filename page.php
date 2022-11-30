@@ -332,13 +332,13 @@ elseif($page == 'invoice')
         where
             invoice.book_id = '".$g_book_id."'
         order by
-            invoice.created_at DESC
+            invoice.invoice_date DESC
     ";
     $result = $db->query($query);    
     
     while($row = $result->fetchArray())
     {
-        $arr_data['list_invoice'][$row['invoice_date']][$row['invoice_id']]['title'] = 'INV/'.$row['book_id'].'/'.date('Ymd',$row['invoice_date']).'/'.$row['restaurant_id'].'/'.$row['invoice_id'];    
+        $arr_data['list_invoice'][$row['invoice_date']][$row['invoice_id']]['title'] = 'INV/'.$row['book_id'].'/'.$row['invoice_id'];    
         $arr_data['list_invoice'][$row['invoice_date']][$row['invoice_id']]['restaurant_name'] = $row['restaurant_name'];    
     }
 ?>
@@ -356,10 +356,9 @@ elseif($page == 'invoice')
             </svg>
             Invoice
         </h1>
-        <div class="text-right">
+        <div class="text-right mb-3">
             <a href="<?=APP_URL.'?page=invoice_add_edit&book_id='.$g_book_id.'&invoice_id=0'?>" class="button bg-success color-white">New</a>
         </div>
-        <hr>
         <table>
             <thead>
                 <tr>
@@ -393,7 +392,6 @@ elseif($page == 'invoice')
                                     <td><?=$val['restaurant_name']?> </td>
                                     <td>
                                         <a class="button bg-warning" href="<?=APP_URL.'?page=invoice_add_edit&book_id='.$g_book_id.'&invoice_id='.$invoice_id?>">Edit</a>
-                                        <a target="_blank" class="button" href="<?=APP_URL.'?page=split_bill_add_edit&book_id='.$g_book_id.'&invoice_id='.$invoice_id.'&sb=0'?>">Split Bill</a>
                                     </td>
                                 </tr>
                             <?php
@@ -541,6 +539,14 @@ elseif($page == 'invoice_add_edit')
             $arr_data['list_rm'][$row['rm_id']]['name'] = $row['rm_name'];    
         }
     }
+    
+    $grand_total = 0;
+    $grand_total += isset($arr_data['list_product_tot']['total']) ? $arr_data['list_product_tot']['total'] : 0;
+    $grand_total += isset($data_invoice['tax_amount']) ? $data_invoice['tax_amount'] : 0;
+    $grand_total -= isset($data_invoice['discount_amount']) ? $data_invoice['discount_amount'] : 0;
+    $grand_total += isset($data_invoice['delivery_amount']) ? $data_invoice['delivery_amount'] : 0;
+    $grand_total += isset($data_invoice['other_amount']) ? $data_invoice['other_amount'] : 0;
+    $grand_total += isset($data_invoice['adjustment_amount']) ? $data_invoice['adjustment_amount'] : 0;
 ?>
     <div class="container">
         <h1>
@@ -603,17 +609,19 @@ elseif($page == 'invoice_add_edit')
                             ?>
                         </select>
                         <label>Tax</label>
-                        <input class="text-right" type="text" name="tax_amount" value="<?=isset($data_invoice['tax_amount']) && $data_invoice['tax_amount'] != 0 ? $data_invoice['tax_amount'] : ''?>">
+                        <input class="text-right" type="text" id="tax_amount" name="tax_amount" value="<?=isset($data_invoice['tax_amount']) && $data_invoice['tax_amount'] != 0 ? $data_invoice['tax_amount'] : ''?>">
                         <label>Discount</label>
-                        <input class="text-right" type="text" name="discount_amount" value="<?=isset($data_invoice['discount_amount']) && $data_invoice['discount_amount'] != 0 ? $data_invoice['discount_amount'] : ''?>">
+                        <input class="text-right" type="text" id="discount_amount" name="discount_amount" value="<?=isset($data_invoice['discount_amount']) && $data_invoice['discount_amount'] != 0 ? $data_invoice['discount_amount'] : ''?>">
                         <label>Delivery</label>
-                        <input class="text-right" type="text" name="delivery_amount" value="<?=isset($data_invoice['delivery_amount']) && $data_invoice['delivery_amount'] != 0 ? $data_invoice['delivery_amount'] : ''?>">
+                        <input class="text-right" type="text" id="delivery_amount" name="delivery_amount" value="<?=isset($data_invoice['delivery_amount']) && $data_invoice['delivery_amount'] != 0 ? $data_invoice['delivery_amount'] : ''?>">
                         
                         <label>Other</label>
-                        <input class="text-right" type="text" name="other_amount" value="<?=isset($data_invoice['other_amount']) && $data_invoice['other_amount'] != 0 ? $data_invoice['other_amount'] : ''?>">
+                        <input class="text-right" type="text" id="other_amount" name="other_amount" value="<?=isset($data_invoice['other_amount']) && $data_invoice['other_amount'] != 0 ? $data_invoice['other_amount'] : ''?>">
                         <label>Adjustment</label>
-                        <input class="text-right" type="text" name="adjustment_amount" value="<?=isset($data_invoice['adjustment_amount']) && $data_invoice['adjustment_amount'] != 0 ? $data_invoice['adjustment_amount'] : ''?>">
-                        
+                        <input class="text-right" type="text" id="adjustment_amount" name="adjustment_amount" value="<?=isset($data_invoice['adjustment_amount']) && $data_invoice['adjustment_amount'] != 0 ? $data_invoice['adjustment_amount'] : ''?>">
+                        <hr>
+                        <b>Grand Total</b>
+                        <div id="grand_total" class="text-right"><?=parsenumber($grand_total,2)?></div>
                        
                     </div>
                     <div class="col-12 col-lg-8">
@@ -1393,13 +1401,13 @@ elseif($page == 'split_bill_add_edit')
             invoice.book_id = '".$g_book_id."'
         order by
             invoice.invoice_date DESC,
-            invoice.created_at DESC
+            invoice.invoice_id DESC
     ";
     $result = $db->query($query);    
 
     while($row = $result->fetchArray())
     {
-        $arr_data['list_invoice'][$row['invoice_date']][$row['invoice_id']]['title'] = 'INV/'.$row['book_id'].'/'.date('Ymd',$row['created_at']).'/'.$row['restaurant_id'].'/'.$row['invoice_id'];    
+        $arr_data['list_invoice'][$row['invoice_date']][$row['invoice_id']]['title'] = 'INV/'.$row['book_id'].'/'.$row['invoice_id'];    
         $arr_data['list_invoice'][$row['invoice_date']][$row['invoice_id']]['tax_amount'] = $row['tax_amount'];    
         $arr_data['list_invoice'][$row['invoice_date']][$row['invoice_id']]['discount_amount'] = $row['discount_amount'];    
         $arr_data['list_invoice'][$row['invoice_date']][$row['invoice_id']]['delivery_amount'] = $row['delivery_amount'];    
