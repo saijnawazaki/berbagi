@@ -322,13 +322,57 @@ elseif($page == 'invoice')
     $arr_data['list_invoice'] = array();
     $query = "
         select
-            invoice.*,
-            restaurant.restaurant_name
+            invoice.invoice_id,
+            invoice.invoice_date,
+            invoice.book_id,
+            restaurant.restaurant_name,
+            (
+                res_inv_details.total_item
+                + invoice.tax_amount
+                - invoice.discount_amount
+                + invoice.delivery_amount
+                + invoice.adjustment_amount 
+                + invoice.other_amount 
+            ) as total_purchase,
+            res_sb.total_sb
         from
             invoice
         inner join
             restaurant
-            on restaurant.restaurant_id = invoice.restaurant_id 
+            on restaurant.restaurant_id = invoice.restaurant_id
+        left join
+        (
+            select
+                invoice_id,
+                sum(qty*price) as total_item
+            from
+                invoice_details
+            group by
+                invoice_id
+        ) as res_inv_details
+        on res_inv_details.invoice_id = invoice.invoice_id
+        left join
+        (
+            select
+                split_bill.invoice_id,
+                SUM
+                (
+                    split_bill_details.item_amount
+                    + split_bill_details.tax_amount 
+                    - split_bill_details.discount_amount 
+                    + split_bill_details.delivery_amount 
+                    + split_bill_details.other_amount 
+                    + split_bill_details.adjustment_amount 
+                ) as total_sb
+            from
+                split_bill_details
+            inner join
+                split_bill
+                on split_bill.sb_id = split_bill_details.sb_id
+            group by
+                split_bill.invoice_id 
+        ) as res_sb
+        on res_sb.invoice_id = invoice.invoice_id   
         where
             invoice.book_id = '".$g_book_id."'
         order by
@@ -340,6 +384,8 @@ elseif($page == 'invoice')
     {
         $arr_data['list_invoice'][$row['invoice_date']][$row['invoice_id']]['title'] = 'INV/'.$row['book_id'].'/'.$row['invoice_id'];    
         $arr_data['list_invoice'][$row['invoice_date']][$row['invoice_id']]['restaurant_name'] = $row['restaurant_name'];    
+        $arr_data['list_invoice'][$row['invoice_date']][$row['invoice_id']]['total_purchase'] = (int) $row['total_purchase'];    
+        $arr_data['list_invoice'][$row['invoice_date']][$row['invoice_id']]['total_sb'] = (int) $row['total_sb'];    
     }
 ?>
     <div class="container">
@@ -365,6 +411,9 @@ elseif($page == 'invoice')
                     <th>Date</th>
                     <th>Invoice ID</th>
                     <th>Restaurant Name</th>
+                    <th>Total Purchase</th>
+                    <th>Total Split Bill</th>
+                    <th>Percentage</th>
                     <th>Action</th>
                 </tr>
             </thead>
@@ -390,6 +439,9 @@ elseif($page == 'invoice')
                                     <td><?=$invoice_date_show?></td>
                                     <td><?=$val['title']?> </td>
                                     <td><?=$val['restaurant_name']?> </td>
+                                    <td class="text-right"><?=parsenumber($val['total_purchase'],2)?> </td>
+                                    <td class="text-right"><?=parsenumber($val['total_sb'],2)?> </td>
+                                    <td class="text-right<?=($val['total_sb']/$val['total_purchase']*100 == 100 ? '' : ' bg-danger')?>"><?=parsenumber($val['total_sb']/$val['total_purchase']*100,2)?>%</td>
                                     <td>
                                         <a class="button bg-warning" href="<?=APP_URL.'?page=invoice_add_edit&book_id='.$g_book_id.'&invoice_id='.$invoice_id?>">Edit</a>
                                     </td>
@@ -608,17 +660,43 @@ elseif($page == 'invoice_add_edit')
                             }
                             ?>
                         </select>
+                        <?php
+                        $js_tot = '
+                            let data_list = document.getElementsByClassName(\'select__product\');
+                            let tot_qty = 0;
+                            let tot_total = 0;
+                            for(let x = 0; x < data_list.length; x++)
+                            {
+                                let id = data_list[x].id;
+                                let exp_id = id.split(\'__\');
+                                tot_qty += Number(document.getElementById(\'input__\'+exp_id[1]+\'__qty\').value);
+                                tot_total += Number(document.getElementById(\'input__\'+exp_id[1]+\'__totalhid\').value);
+                            }
+
+                            document.getElementById(\'info__tot__qty\').innerHTML = tot_qty;
+                            document.getElementById(\'info__tot__total\').innerHTML = tot_total;
+                            
+                            let gt = tot_total;
+                            gt += Number(document.getElementById(\'tax_amount\').value);
+                            gt -= Number(document.getElementById(\'discount_amount\').value);
+                            gt += Number(document.getElementById(\'delivery_amount\').value);
+                            gt += Number(document.getElementById(\'other_amount\').value);
+                            gt += Number(document.getElementById(\'adjustment_amount\').value);
+                            
+                            document.getElementById(\'grand_total\').innerHTML = gt.toFixed(2);
+                        ';
+                        ?>
                         <label>Tax</label>
-                        <input class="text-right" type="text" id="tax_amount" name="tax_amount" value="<?=isset($data_invoice['tax_amount']) && $data_invoice['tax_amount'] != 0 ? $data_invoice['tax_amount'] : ''?>">
+                        <input onkeyup="<?=$js_tot?>" class="text-right" type="text" id="tax_amount" name="tax_amount" value="<?=isset($data_invoice['tax_amount']) && $data_invoice['tax_amount'] != 0 ? $data_invoice['tax_amount'] : ''?>">
                         <label>Discount</label>
-                        <input class="text-right" type="text" id="discount_amount" name="discount_amount" value="<?=isset($data_invoice['discount_amount']) && $data_invoice['discount_amount'] != 0 ? $data_invoice['discount_amount'] : ''?>">
+                        <input onkeyup="<?=$js_tot?>" class="text-right" type="text" id="discount_amount" name="discount_amount" value="<?=isset($data_invoice['discount_amount']) && $data_invoice['discount_amount'] != 0 ? $data_invoice['discount_amount'] : ''?>">
                         <label>Delivery</label>
-                        <input class="text-right" type="text" id="delivery_amount" name="delivery_amount" value="<?=isset($data_invoice['delivery_amount']) && $data_invoice['delivery_amount'] != 0 ? $data_invoice['delivery_amount'] : ''?>">
+                        <input onkeyup="<?=$js_tot?>" class="text-right" type="text" id="delivery_amount" name="delivery_amount" value="<?=isset($data_invoice['delivery_amount']) && $data_invoice['delivery_amount'] != 0 ? $data_invoice['delivery_amount'] : ''?>">
                         
                         <label>Other</label>
-                        <input class="text-right" type="text" id="other_amount" name="other_amount" value="<?=isset($data_invoice['other_amount']) && $data_invoice['other_amount'] != 0 ? $data_invoice['other_amount'] : ''?>">
+                        <input onkeyup="<?=$js_tot?>" class="text-right" type="text" id="other_amount" name="other_amount" value="<?=isset($data_invoice['other_amount']) && $data_invoice['other_amount'] != 0 ? $data_invoice['other_amount'] : ''?>">
                         <label>Adjustment</label>
-                        <input class="text-right" type="text" id="adjustment_amount" name="adjustment_amount" value="<?=isset($data_invoice['adjustment_amount']) && $data_invoice['adjustment_amount'] != 0 ? $data_invoice['adjustment_amount'] : ''?>">
+                        <input onkeyup="<?=$js_tot?>" class="text-right" type="text" id="adjustment_amount" name="adjustment_amount" value="<?=isset($data_invoice['adjustment_amount']) && $data_invoice['adjustment_amount'] != 0 ? $data_invoice['adjustment_amount'] : ''?>">
                         <hr>
                         <b>Grand Total</b>
                         <div id="grand_total" class="text-right"><?=parsenumber($grand_total,2)?></div>
@@ -651,21 +729,7 @@ elseif($page == 'invoice_add_edit')
                                     <td><?=$x?></td>
                                     <td>
                                         <?php
-                                            $js_tot = '
-                                                let data_list = document.getElementsByClassName(\'select__product\');
-                                                let tot_qty = 0;
-                                                let tot_total = 0;
-                                                for(let x = 0; x < data_list.length; x++)
-                                                {
-                                                    let id = data_list[x].id;
-                                                    let exp_id = id.split(\'__\');
-                                                    tot_qty += Number(document.getElementById(\'input__\'+exp_id[1]+\'__qty\').value);
-                                                    tot_total += Number(document.getElementById(\'input__\'+exp_id[1]+\'__totalhid\').value);
-                                                }
-
-                                                document.getElementById(\'info__tot__qty\').innerHTML = tot_qty;
-                                                document.getElementById(\'info__tot__total\').innerHTML = tot_total;
-                                            ';
+                                            
                                             $js_calc = '
                                                 let res = Number(document.getElementById(\'input__'.$x.'__price\').value) * Number(document.getElementById(\'input__'.$x.'__qty\').value);
                                                 document.getElementById(\'input__'.$x.'__total\').innerHTML = res;
@@ -1248,7 +1312,8 @@ elseif($page == 'split_bill')
             invoice.created_at as inv_created_at,
             invoice.restaurant_id,
             invoice.invoice_date,
-            restaurant.restaurant_name
+            restaurant.restaurant_name,
+            res_sb.total_sb
         from
             split_bill
         inner join
@@ -1257,7 +1322,26 @@ elseif($page == 'split_bill')
             and invoice.book_id = '".$g_book_id."'
         inner join
             restaurant
-            on restaurant.restaurant_id = invoice.restaurant_id 
+            on restaurant.restaurant_id = invoice.restaurant_id
+        left join
+        (
+            select
+                split_bill_details.sb_id,
+                SUM
+                (
+                    split_bill_details.item_amount
+                    + split_bill_details.tax_amount 
+                    - split_bill_details.discount_amount 
+                    + split_bill_details.delivery_amount 
+                    + split_bill_details.other_amount 
+                    + split_bill_details.adjustment_amount 
+                ) as total_sb
+            from
+                split_bill_details
+            group by
+                split_bill_details.sb_id 
+        ) as res_sb
+        on res_sb.sb_id = split_bill.sb_id 
         order by
             split_bill.sb_date DESC
     ";
@@ -1265,9 +1349,10 @@ elseif($page == 'split_bill')
    
     while($row = $result->fetchArray())
     {
-        $arr_data['list_invoice'][$row['sb_date']][$row['sb_id']]['inv_code'] = 'INV/'.$row['book_id'].'/'.date('Ymd',$row['inv_created_at']).'/'.$row['restaurant_id'].'/'.$row['invoice_id'];    
-        $arr_data['list_invoice'][$row['sb_date']][$row['sb_id']]['sb_code'] = 'SB/'.$row['book_id'].'/'.date('Ymd',$row['inv_created_at']).'/'.$row['restaurant_id'].'/'.$row['invoice_id'].'/'.$row['sb_id'];    
+        $arr_data['list_invoice'][$row['sb_date']][$row['sb_id']]['inv_code'] = 'INV/'.$row['book_id'].'/'.$row['invoice_id'];    
+        $arr_data['list_invoice'][$row['sb_date']][$row['sb_id']]['sb_code'] = 'SB/'.$row['book_id'].'/'.$row['invoice_id'].'/'.$row['sb_id'];    
         $arr_data['list_invoice'][$row['sb_date']][$row['sb_id']]['restaurant_name'] = $row['restaurant_name'];    
+        $arr_data['list_invoice'][$row['sb_date']][$row['sb_id']]['total_sb'] = $row['total_sb'];    
     }
 ?>
     <div class="container">
@@ -1284,17 +1369,17 @@ elseif($page == 'split_bill')
             </svg>
             Split Bill
         </h1>
-        <div class="text-right">
+        <div class="text-right mb-3">
             <a href="<?=APP_URL.'?page=split_bill_add_edit&book_id='.$g_book_id.'&sb_id=0'?>" class="button bg-success color-white">New</a>
         </div>
-        <hr>
         <table>
             <thead>
                 <tr>
                     <th>Date</th>
+                    <th>Split Bill ID</th>
                     <th>Invoice ID</th>
                     <th>Restaurant</th>
-                    <th>Split Bill ID</th>
+                    <th>Total</th>
                     <th>Action</th>
                 </tr>
             </thead>
@@ -1318,9 +1403,10 @@ elseif($page == 'split_bill')
                             ?>
                                 <tr>
                                     <td><?=$invoice_date_show?></td>
+                                    <td><?=$val['sb_code']?> </td>
                                     <td><?=$val['inv_code']?> </td>
                                     <td><?=$val['restaurant_name']?> </td>
-                                    <td><?=$val['sb_code']?> </td>
+                                    <td class="text-right"><?=parsenumber($val['total_sb'],2)?></td>
                                     <td>
                                         <a class="button bg-warning" href="<?=APP_URL.'?page=split_bill_add_edit&book_id='.$g_book_id.'&sb_id='.$invoice_id?>">Edit</a>
                                         </a>
