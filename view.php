@@ -13,10 +13,10 @@ defined('APP_PATH') OR exit('No direct script access allowed');
     <header class="nav bg-black color-white">
         <div class="container">
             <div class="row">
-                <div class="col-9">
+                <div class="col-12 col-sm-9">
                     <h1><?=APP_TITLE?></h1>
                 </div>
-                <div class="col-3">
+                <div class="col-sm-3 col-12">
                     <?php
                         if(isset($ses['user_id']))
                         {

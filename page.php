@@ -83,7 +83,7 @@ elseif($page == 'book')
         where
             user_id = '".$ses['user_id']."'
         order by
-            created_at DESC
+            book_title ASC
     ";
     //echo "<pre>$query</pre>";
     $result = $db->query($query);    
@@ -1611,11 +1611,27 @@ elseif($page == 'split_bill_add_edit')
     //load person
     $query = "
         select
-            *
+            person.*,
+            res_last.created_at
         from
             person
+        left join
+        (
+            select
+                split_bill_details.person_id,
+                max(split_bill.created_at) as created_at
+            from
+                split_bill_details
+            inner join
+                split_bill
+                on split_bill.sb_id = split_bill_details.sb_id
+            group by
+                split_bill_details.person_id
+        ) as res_last
+        on res_last.person_id = person.person_id
         order by
-            person_name ASC
+            res_last.created_at DESC,
+            person.person_name ASC
     ";
     $result = $db->query($query);
     $arr_data['list_person'] = array();
@@ -1835,6 +1851,8 @@ elseif($page == 'split_bill_add_edit')
                                                 document.getElementById(\'input__'.$x.'__items_amount_panel\').style.display = \'none\';
                                                 document.getElementById(\'input__'.$x.'__items_amount_panel_tgg\').value = 0;
                                             }
+                                            
+                                            document.getElementById(\'input__'.$x.'__items_amount_calc\') .value = document.getElementById(\'input__'.$x.'__items_amount\') .value;
                                         ';
                                         
                                         $js_set = '
@@ -1848,7 +1866,7 @@ elseif($page == 'split_bill_add_edit')
                                     <button onclick="<?=$js?>" type="button" id="input__<?=$x?>__items_amount_show"><?=isset($arr_data['list_sb_details'][$x]['item_amount']) ? parsenumber($arr_data['list_sb_details'][$x]['item_amount']) : 0?></button>
                                     <input class="data__loop" type="hidden" name="sb_list[<?=$x?>][items]" id="input__<?=$x?>__items_amount" value="<?=isset($arr_data['list_sb_details'][$x]['item_amount']) ? $arr_data['list_sb_details'][$x]['item_amount'] : ''?>">   
                                     <input type="hidden" id="input__<?=$x?>__items_amount_panel_tgg" value="0">
-                                    <div id="input__<?=$x?>__items_amount_panel" class="position-absolute bg-light-lighten" style="display:none;;">
+                                    <div id="input__<?=$x?>__items_amount_panel" class="position-absolute bg-light-lighten" style="display:none; z-index: 9000;">
                                         <div class="panel__menu" id="input__<?=$x?>__items_amount_panel_sub"></div>
                                         <select id="input__<?=$x?>__items_amount_calc_mode">
                                             <option value="+">+ ADD</option>
