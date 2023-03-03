@@ -792,9 +792,22 @@ elseif($page == 'invoice_add_edit')
                 </div>
                 <div class="col-12 col-lg-12">
                     <hr>
+                    <label>
+                        <input type="checkbox" value="1" name="copy_with_date" onclick="if(this.checked){document.getElementById('panel_cwd').style.display = '';}else{document.getElementById('panel_cwd').style.display = 'none';}"> Copy This Invoice To New Invoice
+                    </label>
+                    <div id="panel_cwd" style="display: none;">
+                        <label>Copy Invoice Date</label>
+                        <input type="date" name="copy_with_date_invoice_date" value="<?=date('Y-m-d')?>">
+                        <label>
+                            <input type="checkbox" value="1" name="copy_with_split_bill" checked=""> Include Split Bill
+                        </label>
+                        <br><input type="submit" name="copy" class="bg-success color-white" value="Copy">
+                    </div>
+                    <hr>
                     <input type="hidden" name="book_id" value="<?=$g_book_id?>">
                     <input type="hidden" name="invoice_id" value="<?=$g_invoice_id?>">
                     <input type="submit" name="submit" class="bg-primary color-white" value="Submit">
+                    
                 </div>
             </div>    
         </form>

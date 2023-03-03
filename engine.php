@@ -721,6 +721,273 @@ if($_SERVER['REQUEST_METHOD'] === 'POST')
 
             die();
         }
+        
+        if(isset($_POST['copy']))
+        {
+            $v_invoice_id = (int) $_POST['invoice_id'];    
+            $v_copy_with_date_invoice_date = parsedate($_POST['copy_with_date_invoice_date']);
+            $v_copy_with_split_bill = (int) $_POST['copy_with_split_bill'];
+            $mess = '';
+            
+            if($v_invoice_id == 0)
+            {
+                $mess .= 'Invoice ID Invalid<br>';    
+            }
+            
+            if($mess == '')
+            {
+                $query = "select max(invoice_id) as last_id from invoice";
+                $result = $db->query($query);
+                $data = $result->fetchArray();
+                $v_invoice_id_new = ((int) $data['last_id'])+1;
+                
+                //header
+                $query = "
+                    insert into
+                        invoice
+                        (
+                            invoice_id,
+                            book_id,
+                            restaurant_id,
+                            invoice_date,
+                            tax_amount,
+                            discount_amount,
+                            delivery_amount,
+                            adjustment_amount,
+                            other_amount,
+                            platform_id,
+                            created_by,
+                            created_at
+                        )
+                    select
+                        '".$v_invoice_id_new."',
+                        book_id,
+                        restaurant_id,
+                        '".$v_copy_with_date_invoice_date."',
+                        tax_amount,
+                        discount_amount,
+                        delivery_amount,
+                        adjustment_amount,
+                        other_amount,
+                        platform_id,
+                        '".$ses['user_id']."',
+                        '".time()."'
+                    from
+                        invoice
+                    where
+                        invoice_id = '".$v_invoice_id."'    
+                ";
+                if(! $db->query($query))
+                {
+                    $mess .= 'Failed Insert / Update Invoice<br>';
+                }
+                
+                //details
+                $query = "
+                    select
+                        *
+                    from
+                        invoice_details
+                    where
+                        invoice_id = '".$v_invoice_id."'
+                ";
+                $result = $db->query($query);
+                $arr_data['list'] = array();
+                while($row = $result->fetchArray())
+                {
+                    $arr_data['list'][$row['id_id']]['product_id'] = $row['rm_id'];    
+                    $arr_data['list'][$row['id_id']]['qty'] = $row['qty'];    
+                    $arr_data['list'][$row['id_id']]['price'] = $row['price'];    
+                }
+                
+                foreach($arr_data['list'] as $index => $val)
+                {
+                    if($val['product_id'] > 0 && $val['qty'] > 0 && $val['price'] > 0)
+                    {
+                        $query = "select max(id_id) as last_id from invoice_details";
+                        $result = $db->query($query);
+                        $data = $result->fetchArray();
+                        $id_id = ((int) $data['last_id'])+1;
+
+                        $query = "
+                            insert into
+                                invoice_details
+                                (
+                                    id_id,
+                                    invoice_id,
+                                    rm_id,
+                                    qty,
+                                    price
+                                )
+                            values
+                                (
+                                    '".$id_id."',   
+                                    '".$v_invoice_id_new."',   
+                                    '".$val['product_id']."',   
+                                    '".$val['qty']."',   
+                                    '".$val['price']."'   
+                                )
+                        ";
+
+                        if(! $db->query($query))
+                        {
+                            $mess .= 'FAILED Insert Invoice Details<br>';
+                        }
+                    }
+                }    
+            }
+            
+            if($mess == '')
+            {
+                if($v_copy_with_split_bill)
+                {
+                    //cek dulu SB ada berapa
+                    $query = "select count(*) as jumlah from split_bill where invoice_id = '".$v_invoice_id."'";
+                    $result = $db->query($query);
+                    $data = $result->fetchArray();
+                    $jumlah = (int) $data['jumlah'];
+                    
+                    if($jumlah != 1)
+                    {
+                        $mess .= 'FAILED Insert SB Tidak Supplirt Multiple '.$jumlah.'<br>';    
+                    }
+                    else
+                    {
+                        $query = "select sb_id from split_bill where invoice_id = '".$v_invoice_id."'";
+                        $result = $db->query($query);
+                        $data = $result->fetchArray();
+                        $v_sb_id = (int) $data['sb_id'];
+                        
+                        //header
+                        $query = "select max(sb_id) as last_id from split_bill";
+                        $result = $db->query($query);
+                        $data = $result->fetchArray();
+                        $v_sb_id_new = ((int) $data['last_id'])+1;
+                        
+                        $query = "
+                            insert into
+                                split_bill
+                                (
+                                    sb_id,
+                                    invoice_id,
+                                    sb_date,
+                                    created_by,
+                                    created_at
+                                )
+                            values
+                                (
+                                    '".$v_sb_id_new."',
+                                    '".$v_invoice_id_new."',
+                                    '".$v_copy_with_date_invoice_date."',
+                                    '".$ses['user_id']."',
+                                    '".time()."'
+                                )
+                        "; 
+                        
+                        if(! $db->query($query))
+                        {
+                            $mess .= 'FAILED Insert SB Header<br>';
+                        }
+                        
+                        //details
+                        $query = "
+                            select
+                                *
+                            from
+                                split_bill_details
+                            where
+                                sb_id = '".$v_sb_id."'
+                        ";
+                        $result = $db->query($query);
+                        $arr_data['list'] = array();
+                        while($row = $result->fetchArray())
+                        {
+                            $arr_data['list'][$row['sbd_id']]['person_id'] = $row['person_id'];    
+                            $arr_data['list'][$row['sbd_id']]['items'] = $row['item_amount'];    
+                            $arr_data['list'][$row['sbd_id']]['tax'] = $row['tax_amount'];    
+                            $arr_data['list'][$row['sbd_id']]['discount'] = $row['discount_amount'];    
+                            $arr_data['list'][$row['sbd_id']]['delivery'] = $row['delivery_amount'];    
+                            $arr_data['list'][$row['sbd_id']]['other'] = $row['other_amount'];    
+                            $arr_data['list'][$row['sbd_id']]['adjustment'] = $row['adjustment_amount'];    
+                            $arr_data['list'][$row['sbd_id']]['remarks'] = $row['remarks'];    
+                        }
+                        
+                        foreach($arr_data['list'] as $index => $val)
+                        {
+                            if($val['person_id'] > 0 && $val['items'] > 0)
+                            {
+                                $query = "select max(sbd_id) as last_id from split_bill_details";
+                                $result = $db->query($query);
+                                $data = $result->fetchArray();
+                                $sbd_id = ((int) $data['last_id'])+1;
+
+                                $query = "
+                                    insert into
+                                        split_bill_details
+                                        (
+                                            sbd_id,
+                                            sb_id,
+                                            person_id,
+                                            item_amount,
+                                            tax_amount,
+                                            discount_amount,
+                                            delivery_amount,
+                                            other_amount,
+                                            adjustment_amount,
+                                            remarks
+                                        )
+                                    values
+                                        (
+                                            '".$sbd_id."',   
+                                            '".$v_sb_id_new."',   
+                                            '".$val['person_id']."',   
+                                            '".$val['items']."',   
+                                            '".$val['tax']."',   
+                                            '".$val['discount']."',   
+                                            '".$val['delivery']."',   
+                                            '".$val['other']."',   
+                                            '".$val['adjustment']."',   
+                                            '".$val['remarks']."'   
+                                        )
+                                ";
+
+                                if(! $db->query($query))
+                                {
+                                    $mess .= 'FAILED Insert Split Bill Details<br>';
+                                }
+                            }
+                        }   
+                    }
+                     
+                            
+                }
+            }
+            
+            if($mess != '')
+            {
+            ?>
+                <script>
+                    parent.document.getElementById('alert_mess').style.display = '';
+                    parent.document.getElementById('alert_mess_content').innerHTML = '<h4>ERROR</h4><?=$mess?>';
+                </script>
+            <?php
+            }
+            else
+            {
+                $query = "select book_id from invoice where invoice_id = '".$v_invoice_id."'";
+                $result = $db->query($query);
+                $data = $result->fetchArray();
+                $db_book_id = (int) $data['book_id'];
+            ?>
+                <script>
+                    parent.window.open('<?=APP_URL?>?page=invoice&book_id=<?=$db_book_id?>', '_self');
+                </script>
+            <?php
+            }
+
+            die();
+                    
+        }
 
     }
     elseif($page == 'split_bill_add_edit')
