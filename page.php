@@ -291,6 +291,16 @@ elseif($page == 'book_details')
 elseif($page == 'invoice')
 {
     $g_book_id = isset($_GET['book_id']) ? $_GET['book_id'] : 0;
+    $g_date_from = isset($_GET['date_from']) ? parsedate($_GET['date_from']) : 0;
+    $g_date_to = isset($_GET['date_to']) ? parsedate($_GET['date_to']) : 0;
+    $g_filter = isset($_GET['filter']) ? $_GET['filter'] : 0;
+    
+    if($g_date_from == 0)
+    {
+        $g_date_to = parsedate(date('d-m-Y'));
+        $g_date_from = $g_date_to - (6*86400); 
+    }
+    
     if(! preg_match('/^[0-9]*$/', $g_book_id)) 
     {
         die('Book ID Invalid');        
@@ -375,6 +385,7 @@ elseif($page == 'invoice')
         on res_sb.invoice_id = invoice.invoice_id   
         where
             invoice.book_id = '".$g_book_id."'
+            and invoice.invoice_date between '".$g_date_from."' AND '".$g_date_to."'
         order by
             invoice.invoice_date DESC
     ";
@@ -791,18 +802,26 @@ elseif($page == 'invoice_add_edit')
                         </table>
                 </div>
                 <div class="col-12 col-lg-12">
-                    <hr>
-                    <label>
-                        <input type="checkbox" value="1" name="copy_with_date" onclick="if(this.checked){document.getElementById('panel_cwd').style.display = '';}else{document.getElementById('panel_cwd').style.display = 'none';}"> Copy This Invoice To New Invoice
-                    </label>
-                    <div id="panel_cwd" style="display: none;">
-                        <label>Copy Invoice Date</label>
-                        <input type="date" name="copy_with_date_invoice_date" value="<?=date('Y-m-d')?>">
+                    <?php
+                    if($g_invoice_id != 0)
+                    {
+                    ?>
+                        <hr>
                         <label>
-                            <input type="checkbox" value="1" name="copy_with_split_bill" checked=""> Include Split Bill
+                            <input type="checkbox" value="1" name="copy_with_date" onclick="if(this.checked){document.getElementById('panel_cwd').style.display = '';}else{document.getElementById('panel_cwd').style.display = 'none';}"> Copy This Invoice To New Invoice
                         </label>
-                        <br><input type="submit" name="copy" class="bg-success color-white" value="Copy">
-                    </div>
+                        <div id="panel_cwd" style="display: none;">
+                            <label>Copy Invoice Date</label>
+                            <input type="date" name="copy_with_date_invoice_date" value="<?=date('Y-m-d')?>">
+                            <label>
+                                <input type="checkbox" value="1" name="copy_with_split_bill" checked=""> Include Split Bill
+                            </label>
+                            <br><input type="submit" name="copy" class="bg-success color-white" value="Copy">
+                        </div>
+                    <?php    
+                    }
+                    ?>
+                        
                     <hr>
                     <input type="hidden" name="book_id" value="<?=$g_book_id?>">
                     <input type="hidden" name="invoice_id" value="<?=$g_invoice_id?>">
