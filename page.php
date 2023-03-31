@@ -297,7 +297,8 @@ elseif($page == 'invoice')
     
     if($g_date_from == 0)
     {
-        $g_date_to = parsedate(date('d-m-Y'));
+        //echo date('d-m-Y');
+        $g_date_to = parsedate(date('Y-m-d'));
         $g_date_from = $g_date_to - (6*86400); 
     }
     
@@ -413,9 +414,31 @@ elseif($page == 'invoice')
             </svg>
             Invoice
         </h1>
-        <div class="text-right mb-3">
-            <a href="<?=APP_URL.'?page=invoice_add_edit&book_id='.$g_book_id.'&invoice_id=0'?>" class="button bg-success color-white">New</a>
+        <div class="row">
+            <div class="col-12 col-sm-3">
+                <input type="date" class="form-control" id="date_from" name="date_from" value="<?=$g_date_from > 0 ? date('Y-m-d',$g_date_from) : ''?>">
+            </div>
+            <div class="col-12 col-sm-3">
+                <input type="date" class="form-control" id="date_to" name="date_to" value="<?=$g_date_to > 0 ? date('Y-m-d',$g_date_to) : ''?>">
+            </div>
+            <div class="col-12 col-sm-3">
+                <?php
+                    $js = '
+                        var param = \'\';
+                        param += \''.APP_URL.'?page=invoice&book_id='.$g_book_id.'\';
+                        param += \'&date_from=\'+document.getElementById(\'date_from\').value;
+                        param += \'&date_to=\'+document.getElementById(\'date_to\').value;
+                        param += \'&filter=1\';
+                        window.open(param,\'_self\');
+                    ';
+                ?>
+                <button type="button" class="button bg-primary color-white" onclick="<?=$js?>">Set</button>
+            </div>    
+            <div class="col-12 col-sm-3 text-right">
+                <a href="<?=APP_URL.'?page=invoice_add_edit&book_id='.$g_book_id.'&invoice_id=0'?>" class="button bg-success color-white">New</a>
+            </div>    
         </div>
+
         <table>
             <thead>
                 <tr>
@@ -1308,6 +1331,16 @@ elseif($page == 'person_add_edit')
 elseif($page == 'split_bill')
 {
     $g_book_id = isset($_GET['book_id']) ? $_GET['book_id'] : 0;
+    $g_date_from = isset($_GET['date_from']) ? parsedate($_GET['date_from']) : 0;
+    $g_date_to = isset($_GET['date_to']) ? parsedate($_GET['date_to']) : 0;
+    $g_filter = isset($_GET['filter']) ? $_GET['filter'] : 0;
+    
+    if($g_date_from == 0)
+    {
+        $g_date_to = parsedate(date('Y-m-d'));
+        $g_date_from = $g_date_to - (6*86400); 
+    }
+    
     if(! preg_match('/^[0-9]*$/', $g_book_id)) 
     {
         die('Book ID Invalid');        
@@ -1373,7 +1406,9 @@ elseif($page == 'split_bill')
             group by
                 split_bill_details.sb_id 
         ) as res_sb
-        on res_sb.sb_id = split_bill.sb_id 
+        on res_sb.sb_id = split_bill.sb_id
+        where
+            split_bill.sb_date between '".$g_date_from."' AND '".$g_date_to."' 
         order by
             split_bill.sb_date DESC
     ";
@@ -1401,9 +1436,31 @@ elseif($page == 'split_bill')
             </svg>
             Split Bill
         </h1>
-        <div class="text-right mb-3">
-            <a href="<?=APP_URL.'?page=split_bill_add_edit&book_id='.$g_book_id.'&sb_id=0'?>" class="button bg-success color-white">New</a>
+        <div class="row">
+            <div class="col-12 col-sm-3">
+                <input type="date" class="form-control" id="date_from" name="date_from" value="<?=$g_date_from > 0 ? date('Y-m-d',$g_date_from) : ''?>">
+            </div>
+            <div class="col-12 col-sm-3">
+                <input type="date" class="form-control" id="date_to" name="date_to" value="<?=$g_date_to > 0 ? date('Y-m-d',$g_date_to) : ''?>">
+            </div>
+            <div class="col-12 col-sm-3">
+                <?php
+                    $js = '
+                        var param = \'\';
+                        param += \''.APP_URL.'?page=split_bill&book_id='.$g_book_id.'\';
+                        param += \'&date_from=\'+document.getElementById(\'date_from\').value;
+                        param += \'&date_to=\'+document.getElementById(\'date_to\').value;
+                        param += \'&filter=1\';
+                        window.open(param,\'_self\');
+                    ';
+                ?>
+                <button type="button" class="button bg-primary color-white" onclick="<?=$js?>">Set</button>
+            </div>    
+            <div class="col-12 col-sm-3 text-right">
+                <a href="<?=APP_URL.'?page=split_bill_add_edit&book_id='.$g_book_id.'&sb_id=0'?>" class="button bg-success color-white">New</a>
+            </div>    
         </div>
+        
         <table>
             <thead>
                 <tr>
@@ -2105,6 +2162,15 @@ elseif($page == 'split_bill_add_edit')
 elseif($page == 'payment')
 {
     $g_book_id = isset($_GET['book_id']) ? $_GET['book_id'] : 0;
+    $g_date_from = isset($_GET['date_from']) ? parsedate($_GET['date_from']) : 0;
+    $g_date_to = isset($_GET['date_to']) ? parsedate($_GET['date_to']) : 0;
+    $g_filter = isset($_GET['filter']) ? $_GET['filter'] : 0;
+    
+    if($g_date_from == 0)
+    {
+        $g_date_to = parsedate(date('Y-m-d'));
+        $g_date_from = $g_date_to - (6*86400); 
+    }
     
     if(! preg_match('/^[0-9]*$/', $g_book_id)) 
     {
@@ -2147,6 +2213,7 @@ elseif($page == 'payment')
             on person.person_id = payment.person_id
         where
             payment.book_id = '".$g_book_id."'
+            and payment.payment_date between '".$g_date_from."' and '".$g_date_to."'
         order by
             payment.payment_date DESC,
             payment.created_at DESC
@@ -2174,9 +2241,31 @@ elseif($page == 'payment')
                 Payment
             </a>
         </h1>
-        <div class="text-right">
-            <a href="<?=APP_URL.'?page=payment_add_edit&payment_id_id=0&book_id='.$g_book_id?>" class="button bg-success color-white">New</a>
+        <div class="row">
+            <div class="col-12 col-sm-3">
+                <input type="date" class="form-control" id="date_from" name="date_from" value="<?=$g_date_from > 0 ? date('Y-m-d',$g_date_from) : ''?>">
+            </div>
+            <div class="col-12 col-sm-3">
+                <input type="date" class="form-control" id="date_to" name="date_to" value="<?=$g_date_to > 0 ? date('Y-m-d',$g_date_to) : ''?>">
+            </div>
+            <div class="col-12 col-sm-3">
+                <?php
+                    $js = '
+                        var param = \'\';
+                        param += \''.APP_URL.'?page=payment&book_id='.$g_book_id.'\';
+                        param += \'&date_from=\'+document.getElementById(\'date_from\').value;
+                        param += \'&date_to=\'+document.getElementById(\'date_to\').value;
+                        param += \'&filter=1\';
+                        window.open(param,\'_self\');
+                    ';
+                ?>
+                <button type="button" class="button bg-primary color-white" onclick="<?=$js?>">Set</button>
+            </div>    
+            <div class="col-12 col-sm-3 text-right">
+                <a href="<?=APP_URL.'?page=payment_add_edit&payment_id_id=0&book_id='.$g_book_id?>" class="button bg-success color-white">New</a>
+            </div>    
         </div>
+        
         <hr>
         <table>
             <thead>
