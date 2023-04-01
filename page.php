@@ -284,6 +284,13 @@ elseif($page == 'book_details')
                     </div>
                 </a>
             </div>
+            <div class="col-6 col-lg-3">
+                <a href="<?=APP_URL.'?page=book_report&book_id='.$g_book_id?>">
+                    <div class="bg-light p-3 br-2 mb-3">
+                        <h1>Book Report</h1>
+                    </div>
+                </a>
+            </div>
         </div>
     </div>
 <?php    
@@ -3206,6 +3213,334 @@ elseif($page == 'summary')
     </div>
     <?php
         
+}
+elseif($page == 'book_report')
+{
+    $g_share_code = isset($_GET['share_code']) ? trim(strtolower($_GET['share_code'])) : '';
+    $g_book_id = isset($_GET['book_id']) ? $_GET['book_id'] : 0;
+    
+    //echo ':D';
+
+    //load invoice
+    $query = "
+        select
+            invoice.invoice_id,
+            invoice.invoice_date,
+            invoice.book_id,
+            restaurant.restaurant_name,
+            res_inv_details.total_item,
+            invoice.tax_amount,
+            invoice.discount_amount,
+            invoice.delivery_amount,
+            invoice.adjustment_amount, 
+            invoice.other_amount,
+            (
+                res_inv_details.total_item
+                + invoice.tax_amount
+                - invoice.discount_amount
+                + invoice.delivery_amount
+                + invoice.adjustment_amount 
+                + invoice.other_amount 
+            ) as total_purchase
+        from
+            invoice
+        inner join
+            restaurant
+            on restaurant.restaurant_id = invoice.restaurant_id
+        left join
+        (
+            select
+                invoice_id,
+                sum(qty*price) as total_item
+            from
+                invoice_details
+            group by
+                invoice_id
+        ) as res_inv_details
+        on res_inv_details.invoice_id = invoice.invoice_id
+        inner join
+            book
+            on book.book_id = invoice.book_id
+            and book.book_id = '".$g_book_id."'
+        order by
+            invoice.invoice_date ASC
+    ";
+    $result = $db->query($query);    
+    
+    $arr_data['list_invoice'] = array();
+
+    while($row = $result->fetchArray())
+    {
+        $arr_data['list_invoice'][$row['invoice_date']][$row['invoice_id']]['title'] = 'INV/'.$row['book_id'].'/'.$row['invoice_id'];    
+        $arr_data['list_invoice'][$row['invoice_date']][$row['invoice_id']]['restaurant_name'] = $row['restaurant_name'];    
+        $arr_data['list_invoice'][$row['invoice_date']][$row['invoice_id']]['total_item'] = (int) $row['total_item'];    
+        $arr_data['list_invoice'][$row['invoice_date']][$row['invoice_id']]['tax_amount'] = (int) $row['tax_amount'];    
+        $arr_data['list_invoice'][$row['invoice_date']][$row['invoice_id']]['discount_amount'] = (int) $row['discount_amount'];    
+        $arr_data['list_invoice'][$row['invoice_date']][$row['invoice_id']]['delivery_amount'] = (int) $row['delivery_amount'];    
+        $arr_data['list_invoice'][$row['invoice_date']][$row['invoice_id']]['adjustment_amount'] = (int) $row['adjustment_amount'];    
+        $arr_data['list_invoice'][$row['invoice_date']][$row['invoice_id']]['other_amount'] = (int) $row['other_amount'];        
+        $arr_data['list_invoice'][$row['invoice_date']][$row['invoice_id']]['total_purchase'] = (int) $row['total_purchase'];        
+    }
+
+    //SB
+    $query = "
+        select
+            split_bill.sb_id,
+            split_bill.sb_date,
+            split_bill.invoice_id,
+            invoice.book_id,
+            SUM(
+                split_bill_details.item_amount
+                + split_bill_details.tax_amount 
+                - split_bill_details.discount_amount 
+                + split_bill_details.delivery_amount 
+                + split_bill_details.other_amount 
+                + split_bill_details.adjustment_amount 
+            ) as total_sb,
+            SUM(split_bill_details.item_amount) as item_amount,
+            SUM(split_bill_details.tax_amount) as tax_amount,
+            SUM(split_bill_details.discount_amount) as discount_amount, 
+            SUM(split_bill_details.delivery_amount) as delivery_amount,
+            SUM(split_bill_details.other_amount) as other_amount,
+            SUM(split_bill_details.adjustment_amount) as adjustment_amount 
+        from
+            split_bill_details
+        inner join
+            split_bill
+            on split_bill.sb_id = split_bill_details.sb_id
+        inner join
+            invoice
+            on invoice.invoice_id = split_bill.invoice_id
+            and invoice.book_id = '".$g_book_id."'
+        group by
+            split_bill.sb_id,
+            split_bill.invoice_id,
+            split_bill.sb_date,
+            invoice.book_id
+        order by
+            split_bill.sb_date ASC
+    ";
+    $result = $db->query($query);    
+    $arr_data['list_split_bill'] = array();
+
+    while($row = $result->fetchArray())
+    {
+        $arr_data['list_split_bill'][$row['invoice_id']][$row['sb_id']]['title'] = 'SB/'.$row['book_id'].'/'.$row['invoice_id'].'/'.$row['sb_id'];    
+        $arr_data['list_split_bill'][$row['invoice_id']][$row['sb_id']]['total_sb'] = (int) $row['total_sb'];    
+        $arr_data['list_split_bill'][$row['invoice_id']][$row['sb_id']]['item_amount'] = (int) $row['item_amount'];    
+        $arr_data['list_split_bill'][$row['invoice_id']][$row['sb_id']]['tax_amount'] = (int) $row['tax_amount'];    
+        $arr_data['list_split_bill'][$row['invoice_id']][$row['sb_id']]['discount_amount'] = (int) $row['discount_amount'];    
+        $arr_data['list_split_bill'][$row['invoice_id']][$row['sb_id']]['delivery_amount'] = (int) $row['delivery_amount'];    
+        $arr_data['list_split_bill'][$row['invoice_id']][$row['sb_id']]['other_amount'] = (int) $row['other_amount'];    
+        $arr_data['list_split_bill'][$row['invoice_id']][$row['sb_id']]['adjustment_amount'] = (int) $row['adjustment_amount'];    
+        $arr_data['list_split_bill'][$row['invoice_id']][$row['sb_id']]['sb_date'] = $row['sb_date'];    
+    }
+    
+    //SB per person
+    $query = "
+        select
+            split_bill.*,
+            split_bill_details.person_id,
+            person.initial_name,
+            person.person_name,
+            invoice.book_id,
+            (
+                split_bill_details.item_amount
+                + split_bill_details.tax_amount 
+                - split_bill_details.discount_amount 
+                + split_bill_details.delivery_amount 
+                + split_bill_details.other_amount 
+                + split_bill_details.adjustment_amount 
+            ) as total_sb,
+            split_bill_details.item_amount,
+            split_bill_details.tax_amount,
+            split_bill_details.discount_amount, 
+            split_bill_details.delivery_amount,
+            split_bill_details.other_amount,
+            split_bill_details.adjustment_amount 
+        from
+            split_bill_details
+        inner join
+            split_bill
+            on split_bill.sb_id = split_bill_details.sb_id
+        inner join
+            person
+            on person.person_id = split_bill_details.person_id
+        inner join
+            invoice
+            on invoice.invoice_id = split_bill.invoice_id
+            and invoice.book_id = '".$g_book_id."'
+        order by
+            split_bill.sb_date ASC
+    ";
+    $result = $db->query($query);    
+    $arr_data['list_split_bill_per_person'] = array();
+
+    while($row = $result->fetchArray())
+    {
+        $arr_data['list_split_bill_per_person'][$row['sb_id']][$row['person_id']]['total_sb'] = (int) $row['total_sb'];    
+        $arr_data['list_split_bill_per_person'][$row['sb_id']][$row['person_id']]['item_amount'] = (int) $row['item_amount'];    
+        $arr_data['list_split_bill_per_person'][$row['sb_id']][$row['person_id']]['tax_amount'] = (int) $row['tax_amount'];    
+        $arr_data['list_split_bill_per_person'][$row['sb_id']][$row['person_id']]['discount_amount'] = (int) $row['discount_amount'];    
+        $arr_data['list_split_bill_per_person'][$row['sb_id']][$row['person_id']]['delivery_amount'] = (int) $row['delivery_amount'];    
+        $arr_data['list_split_bill_per_person'][$row['sb_id']][$row['person_id']]['other_amount'] = (int) $row['other_amount'];    
+        $arr_data['list_split_bill_per_person'][$row['sb_id']][$row['person_id']]['adjustment_amount'] = (int) $row['adjustment_amount'];    
+        $arr_data['list_split_bill_per_person'][$row['sb_id']][$row['person_id']]['person_name'] = $row['person_name'];    
+        $arr_data['list_split_bill_per_person'][$row['sb_id']][$row['person_id']]['initial_name'] = $row['initial_name'];    
+    }
+    ?>
+        <div class="container">
+            <h1>Book Report</h1>
+            <hr>
+            <div id="report_book">
+                <table>
+                    <tr>
+                        <th>Date</th>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>Item</th>
+                        <th>Tax</th>
+                        <th>Discount</th>
+                        <th>Delivery</th>
+                        <th>Adjustment</th>
+                        <th>Other</th>
+                        <th>Total</th>
+                    </tr>
+                    <?php
+                        if(count($arr_data['list_invoice']) == 0)
+                        {
+                            echo '<tr><td colspan="100">No Data</td></tr>';
+                        }
+                        else
+                        {
+                            foreach($arr_data['list_invoice'] as $date => $value)
+                            {
+                                $show_date = date('Y-m-d',$date);
+                                foreach($arr_data['list_invoice'][$date] as $invoice_id => $value)
+                                {
+                                ?>
+                                    <tr>
+                                        <td><?=$show_date?></td>
+                                        <td>
+                                            <?php
+                                                $js = '
+                                                    if(document.getElementById(\'datatd__inv__'.$invoice_id.'\').value == \'0\')
+                                                    {
+                                                        document.getElementById(\'datatd__inv__'.$invoice_id.'\').value = \'1\'; 
+                                                        this.innerHTML = \'[-]\';  
+                                                        
+                                                        let data_list = document.getElementsByClassName(\'datalist__inv__'.$invoice_id.'\');
+                                                        for(let x = 0; x < data_list.length; x++)
+                                                        {
+                                                            data_list[x].style.display = \'\';     
+                                                        }
+                                                    }
+                                                    else
+                                                    {
+                                                        document.getElementById(\'datatd__inv__'.$invoice_id.'\').value = \'0\';
+                                                        this.innerHTML = \'[+]\';
+                                                        let data_list = document.getElementsByClassName(\'datalist__inv__'.$invoice_id.'\');
+                                                        for(let x = 0; x < data_list.length; x++)
+                                                        {
+                                                            data_list[x].style.display = \'none\';     
+                                                        }
+                                                    }
+                                                ';
+                                            ?>
+                                            <a href="javascript:void(0)" onclick="<?=$js?>">[+]</a>
+                                            <input type="hidden" id="datatd__inv__<?=$invoice_id?>" value="0">
+                                            <?=$value['title']?>
+                                        </td>
+                                        <td><?=$value['restaurant_name']?></td>
+                                        <td align="right"><?=parsenumber($value['total_item'],2)?></td>
+                                        <td align="right"><?=parsenumber($value['tax_amount'],2)?></td>
+                                        <td align="right"><?=parsenumber($value['discount_amount'],2)?></td>
+                                        <td align="right"><?=parsenumber($value['delivery_amount'],2)?></td>
+                                        <td align="right"><?=parsenumber($value['adjustment_amount'],2)?></td>
+                                        <td align="right"><?=parsenumber($value['other_amount'],2)?></td>
+                                        <td align="right"><?=parsenumber($value['total_purchase'],2)?></td>
+                                    </tr>
+                                <?php
+                                    $show_date = '';
+
+                                    if(isset($arr_data['list_split_bill'][$invoice_id]))
+                                    {
+                                        foreach($arr_data['list_split_bill'][$invoice_id] as $sb_id => $val)
+                                        {
+                                            ?>
+                                                <tr style="display:none;" class="datalist__inv__<?=$invoice_id?>">
+                                                    <td><?=date('Y-m-d', $val['sb_date'])?></td>
+                                                    <td>
+                                                    <?php
+                                                        $js = '
+                                                            if(document.getElementById(\'datatd__sb__'.$sb_id.'\').value == \'0\')
+                                                            {
+                                                                document.getElementById(\'datatd__sb__'.$sb_id.'\').value = \'1\'; 
+                                                                this.innerHTML = \'[-]\';  
+                                                                
+                                                                let data_list = document.getElementsByClassName(\'datalist__sb__'.$invoice_id.'\');
+                                                                for(let x = 0; x < data_list.length; x++)
+                                                                {
+                                                                    data_list[x].style.display = \'\';     
+                                                                }
+                                                            }
+                                                            else
+                                                            {
+                                                                document.getElementById(\'datatd__sb__'.$sb_id.'\').value = \'0\';
+                                                                this.innerHTML = \'[+]\';
+                                                                let data_list = document.getElementsByClassName(\'datalist__sb__'.$invoice_id.'\');
+                                                                for(let x = 0; x < data_list.length; x++)
+                                                                {
+                                                                    data_list[x].style.display = \'none\';     
+                                                                }
+                                                            }
+                                                        ';
+                                                    ?>
+                                                    <a href="javascript:void(0)" onclick="<?=$js?>">[+]</a>
+                                                    <input type="hidden" id="datatd__sb__<?=$sb_id?>" value="0">
+                                                        <?=$val['title']?>
+                                                    </td>
+                                                    <td>Person: <?=parsenumber(count($arr_data['list_split_bill_per_person'][$sb_id]),0)?></td>
+                                                    <td align="right"><?=parsenumber($val['item_amount'],2)?></td>
+                                                    <td align="right"><?=parsenumber($val['tax_amount'],2)?></td>
+                                                    <td align="right"><?=parsenumber($val['discount_amount'],2)?></td>
+                                                    <td align="right"><?=parsenumber($val['delivery_amount'],2)?></td>
+                                                    <td align="right"><?=parsenumber($val['adjustment_amount'],2)?></td>
+                                                    <td align="right"><?=parsenumber($val['other_amount'],2)?></td>
+                                                    <td align="right"><?=parsenumber($val['total_sb'],2)?></td>
+                                                </tr>
+                                            <?php
+
+                                                    if(isset($arr_data['list_split_bill_per_person'][$sb_id]))
+                                                    {
+                                                        foreach($arr_data['list_split_bill_per_person'][$sb_id] as $person_id => $valz)
+                                                        {
+                                                            ?>
+                                                                <tr style="display:none;" class="datalist__sb__<?=$sb_id?>">
+                                                                    <td>&nbsp;</td>
+                                                                    <td><?=$valz['initial_name']?></td>
+                                                                    <td><?=$valz['person_name']?></td>
+                                                                    <td align="right"><?=parsenumber($valz['item_amount'],2)?></td>
+                                                                    <td align="right"><?=parsenumber($valz['tax_amount'],2)?></td>
+                                                                    <td align="right"><?=parsenumber($valz['discount_amount'],2)?></td>
+                                                                    <td align="right"><?=parsenumber($valz['delivery_amount'],2)?></td>
+                                                                    <td align="right"><?=parsenumber($valz['adjustment_amount'],2)?></td>
+                                                                    <td align="right"><?=parsenumber($valz['other_amount'],2)?></td>
+                                                                    <td align="right"><?=parsenumber($valz['total_sb'],2)?></td>
+                                                                </tr>
+                                                            <?php
+                                                        }
+                                                    }
+                                        }
+                                    }
+                                }    
+                            }
+                        }
+                    ?>
+                </table>
+            </div>
+        </div>
+    <?php
 }
 elseif($page == 'personal_report')
 {
