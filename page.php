@@ -505,6 +505,43 @@ elseif($page == 'invoice_add_edit')
 {
     $g_book_id = isset($_GET['book_id']) ? $_GET['book_id'] : 0;
     $g_invoice_id = isset($_GET['invoice_id']) ? $_GET['invoice_id'] : 0;
+    $g_share_code = isset($_GET['share_code']) ? $_GET['share_code'] : '';
+    $read_only = false;
+    if($g_share_code != '')
+    {
+        //check code
+        $query = "
+            select
+                personal_report_share.*
+            from
+                personal_report_share
+            where
+                personal_report_share.token_code = '".$g_share_code."'
+        ";
+        //echo $query;
+        $result = $db->query($query) or die('QWUIEHUQWEHIUQWHEUHQWEQWE');
+        $row = $result->fetchArray();
+        //print_r($row);
+        if(! $row)
+        {
+            die('Data Invalid');
+        }
+        else
+        {
+            if(time() > $row['token_exp_at'])
+            {
+                die('Expired');
+            }               
+            else
+            {
+                $g_book_id = $row['book_id'];    
+            }
+                   
+        }
+        $result = array();
+        $row = array();
+        $read_only = true;
+    }
     
     if(! preg_match('/^[0-9]*$/', $g_book_id)) 
     {
@@ -524,7 +561,7 @@ elseif($page == 'invoice_add_edit')
             from
                 book
             where
-                book_id = '".$_GET['book_id']."'
+                book_id = '".$g_book_id."'
         ";
         $result = $db->query($query);    
         $data = $result->fetchArray();
@@ -653,7 +690,35 @@ elseif($page == 'invoice_add_edit')
             <svg id="i-chevron-right" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentcolor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2">
                 <path d="M12 30 L24 16 12 2" />
             </svg>
-            Add / Edit
+            <?php
+                if($read_only)
+                {
+                    echo 'View';
+                    ?>
+                     <svg id="i-chevron-right" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentcolor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2">
+                        <path d="M12 30 L24 16 12 2" />
+                    </svg>
+                    INV/<?=$g_book_id?>/<?=$g_invoice_id?>
+                    <?php
+                }
+                else
+                {
+                    if($g_invoice_id == 0)
+                    {
+                        echo 'Add';
+                    }
+                    else
+                    {
+                        echo 'Edit';
+                        ?>
+                        <svg id="i-chevron-right" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentcolor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2">
+                            <path d="M12 30 L24 16 12 2" />
+                        </svg>
+                        INV/<?=$g_book_id?>/<?=$g_invoice_id?>
+                        <?php
+                    }
+                }
+            ?>
         </h1>
         <hr>
        
@@ -661,30 +726,53 @@ elseif($page == 'invoice_add_edit')
             <div class="row">
                 <div class="col-12 col-lg-4">
                         <label>Invoice Date</label>
-                        <input type="date" name="invoice_date" value="<?=isset($data_invoice['invoice_date']) ? date('Y-m-d',$data_invoice['invoice_date']) : date('Y-m-d')?>">
-                        <label>Restaurant</label>
-                        <select id="restaurant_id" name="restaurant_id" onchange="getData({page:'getSelectRestaurantMenuByRestaurantID',restaurantID: this.value,targetSelect:document.getElementsByClassName('select__product')})">
-                            <option value="0">-</option>
-                            <?php
-                            if(isset($arr_data['list_restaurant']))
+                        <?php
+                            if($read_only)
                             {
-                                if(count($arr_data['list_restaurant']) > 0)
-                                {
-                                    foreach($arr_data['list_restaurant'] as $restaurant_id => $val)
-                                    {
-                                    ?>
-                                        <option value="<?=$restaurant_id?>"<?=isset($data_invoice['restaurant_id']) ? ($data_invoice['restaurant_id'] == $restaurant_id  ? ' selected' : '') : ''?>><?=$val['name']?></option>
-                                    <?php
-                                    }
-                                }    
-                            }   
+                                echo '<br>'.(isset($data_invoice['invoice_date']) ? date('Y-m-d',$data_invoice['invoice_date']) : '-').'<br><br>';
+                            }
+                            else
+                            {
                             ?>
-                        </select>
-                        <div>
-                            <button type="button" onclick="window.open('<?=APP_URL?>?page=restaurant', '_blank')">New</button>
-                            <button type="button" onchange="getData({page:'getSelectRestaurantMenuByRestaurantID',restaurantID: document.getElementById('restaurant_id').value,targetSelect:document.getElementsByClassName('select__product')})">Refresh</button>
-                            <button type="button" onclick="window.open('<?=APP_URL?>?page=restaurant_menu&restaurant_id='+document.getElementById('restaurant_id').value, '_blank')">Menu</button>
-                        </div>    
+                                <input type="date" name="invoice_date" value="<?=isset($data_invoice['invoice_date']) ? date('Y-m-d',$data_invoice['invoice_date']) : date('Y-m-d')?>">
+                            <?php
+                            }
+                        ?>
+                        <label>Restaurant</label>
+                        <?php
+                            if($read_only)
+                            {
+                                echo '<br>'.(isset($data_invoice['restaurant_id']) ? $arr_data['list_restaurant'][$data_invoice['restaurant_id']]['name'] : '-').'<br><br>';
+                            }
+                            else
+                            {
+                            ?>
+                            <select id="restaurant_id" name="restaurant_id" onchange="getData({page:'getSelectRestaurantMenuByRestaurantID',restaurantID: this.value,targetSelect:document.getElementsByClassName('select__product')})">
+                                <option value="0">-</option>
+                                <?php
+                                if(isset($arr_data['list_restaurant']))
+                                {
+                                    if(count($arr_data['list_restaurant']) > 0)
+                                    {
+                                        foreach($arr_data['list_restaurant'] as $restaurant_id => $val)
+                                        {
+                                        ?>
+                                            <option value="<?=$restaurant_id?>"<?=isset($data_invoice['restaurant_id']) ? ($data_invoice['restaurant_id'] == $restaurant_id  ? ' selected' : '') : ''?>><?=$val['name']?></option>
+                                        <?php
+                                        }
+                                    }    
+                                }   
+                                ?>
+                            </select>
+                            <div>
+                                <button type="button" onclick="window.open('<?=APP_URL?>?page=restaurant', '_blank')">New</button>
+                                <button type="button" onchange="getData({page:'getSelectRestaurantMenuByRestaurantID',restaurantID: document.getElementById('restaurant_id').value,targetSelect:document.getElementsByClassName('select__product')})">Refresh</button>
+                                <button type="button" onclick="window.open('<?=APP_URL?>?page=restaurant_menu&restaurant_id='+document.getElementById('restaurant_id').value, '_blank')">Menu</button>
+                            </div>
+                            <?php
+                            }
+                        ?>
+                            
                                 
                         <label>Platform</label>
                         <select name="platform_id">
@@ -833,7 +921,7 @@ elseif($page == 'invoice_add_edit')
                 </div>
                 <div class="col-12 col-lg-12">
                     <?php
-                    if($g_invoice_id != 0)
+                    if($g_invoice_id != 0 && !$read_only)
                     {
                     ?>
                         <hr>
@@ -855,7 +943,15 @@ elseif($page == 'invoice_add_edit')
                     <hr>
                     <input type="hidden" name="book_id" value="<?=$g_book_id?>">
                     <input type="hidden" name="invoice_id" value="<?=$g_invoice_id?>">
-                    <input type="submit" name="submit" class="bg-primary color-white" value="Submit">
+                    <?php
+                        if(! $read_only)
+                        {   
+                            ?>
+                            <input type="submit" name="submit" class="bg-primary color-white" value="Submit">
+                    
+                            <?php
+                        }
+                    ?>
                     
                 </div>
             </div>    
@@ -3220,6 +3316,95 @@ elseif($page == 'book_report')
     $g_book_id = isset($_GET['book_id']) ? $_GET['book_id'] : 0;
     
     //echo ':D';
+    if($g_share_code == '')
+    {
+        if(true)
+        {
+            if(! isset($ses['user_id']))
+            {
+                die('Need Login');    
+            }
+            else
+            {
+                if($ses['user_id'] == 0)
+                {
+                    die('Login Invalid');    
+                }
+                else
+                {
+                   
+                    $result = array();
+                    $row = array();
+                    
+                    $token = bin2hex(random_bytes(4));
+                    $query = "
+                        insert into
+                            personal_report_share
+                            (
+                                token_code,
+                                manager_person_id,
+                                person_id,
+                                token_exp_at,
+                                book_id
+                            )
+                        values
+                            (
+                                '".$token."',
+                                '0',
+                                '0',
+                                '".(time()+1800)."',
+                                '".$g_book_id."'
+                            )
+                    ";
+                    
+                    if(! $db->query($query))
+                    {
+                        die('ERROR');
+                    }
+                    else
+                    {
+                        header('location: '.APP_URL.'?page=book_report&share_code='.$token);
+                    }
+                        
+                }        
+            }
+        } 
+    }
+    else
+    {
+        //check code
+        $query = "
+            select
+                personal_report_share.*
+            from
+                personal_report_share
+            where
+                personal_report_share.token_code = '".$g_share_code."'
+        ";
+        //echo $query;
+        $result = $db->query($query) or die('QWUIEHUQWEHIUQWHEUHQWEQWE');
+        $row = $result->fetchArray();
+        //print_r($row);
+        if(! $row)
+        {
+            die('Data Invalid');
+        }
+        else
+        {
+            if(time() > $row['token_exp_at'])
+            {
+                die('Expired');
+            }               
+            else
+            {
+                $g_book_id = $row['book_id'];    
+            }
+                   
+        }
+        $result = array();
+        $row = array();
+        
+    }
 
     //load invoice
     $query = "
@@ -3375,6 +3560,7 @@ elseif($page == 'book_report')
     ";
     $result = $db->query($query);    
     $arr_data['list_split_bill_per_person'] = array();
+    $arr_data['list_split_bill_per_person_sum'] = array();
 
     while($row = $result->fetchArray())
     {
@@ -3386,13 +3572,148 @@ elseif($page == 'book_report')
         $arr_data['list_split_bill_per_person'][$row['sb_id']][$row['person_id']]['other_amount'] = (int) $row['other_amount'];    
         $arr_data['list_split_bill_per_person'][$row['sb_id']][$row['person_id']]['adjustment_amount'] = (int) $row['adjustment_amount'];    
         $arr_data['list_split_bill_per_person'][$row['sb_id']][$row['person_id']]['person_name'] = $row['person_name'];    
-        $arr_data['list_split_bill_per_person'][$row['sb_id']][$row['person_id']]['initial_name'] = $row['initial_name'];    
+        $arr_data['list_split_bill_per_person'][$row['sb_id']][$row['person_id']]['initial_name'] = $row['initial_name'];
+        
+        if(! isset($arr_data['list_split_bill_per_person_sum'][$row['person_id']]['total_sb']))
+        {
+            $arr_data['list_split_bill_per_person_sum'][$row['person_id']]['total_sb'] = 0;    
+            $arr_data['list_split_bill_per_person_sum'][$row['person_id']]['item_amount'] = 0;    
+            $arr_data['list_split_bill_per_person_sum'][$row['person_id']]['tax_amount'] = 0;    
+            $arr_data['list_split_bill_per_person_sum'][$row['person_id']]['discount_amount'] = 0;    
+            $arr_data['list_split_bill_per_person_sum'][$row['person_id']]['delivery_amount'] = 0;    
+            $arr_data['list_split_bill_per_person_sum'][$row['person_id']]['other_amount'] = 0;    
+            $arr_data['list_split_bill_per_person_sum'][$row['person_id']]['adjustment_amount'] = 0;
+        }
+        $arr_data['list_split_bill_per_person_sum'][$row['person_id']]['total_sb'] += (int) $row['total_sb'];    
+        $arr_data['list_split_bill_per_person_sum'][$row['person_id']]['item_amount'] += (int) $row['item_amount'];    
+        $arr_data['list_split_bill_per_person_sum'][$row['person_id']]['tax_amount'] += (int) $row['tax_amount'];    
+        $arr_data['list_split_bill_per_person_sum'][$row['person_id']]['discount_amount'] += (int) $row['discount_amount'];    
+        $arr_data['list_split_bill_per_person_sum'][$row['person_id']]['delivery_amount'] += (int) $row['delivery_amount'];    
+        $arr_data['list_split_bill_per_person_sum'][$row['person_id']]['other_amount'] += (int) $row['other_amount'];    
+        $arr_data['list_split_bill_per_person_sum'][$row['person_id']]['adjustment_amount'] += (int) $row['adjustment_amount'];    
+        $arr_data['list_split_bill_per_person_sum'][$row['person_id']]['person_name'] = $row['person_name'];    
+        $arr_data['list_split_bill_per_person_sum'][$row['person_id']]['initial_name'] = $row['initial_name']; 
+    }
+
+    //Load Payment
+    $query = "
+        select
+            payment.*
+        from
+            payment
+        where
+            payment.book_id = '".$g_book_id."'
+    ";
+    //echo $query; 
+    //$result = null;
+    //$row = null;
+    $arr_data['list_payment_per_person'] = array();
+    $arr_data['list_payment_per_person_details'] = array();
+    $result = $db->query($query) or die('error2');
+    while($row = $result->fetchArray())
+    {
+        if(! isset($arr_data['list_payment_per_person'][$row['person_id']]['amount']))
+        {
+            $arr_data['list_payment_per_person'][$row['person_id']]['amount'] = 0;
+        }
+
+        if($row['payment_type_id'] == 1)
+        {
+            $arr_data['list_payment_per_person'][$row['person_id']]['amount'] += $row['amount'];    
+        }
+        else
+        {
+            $arr_data['list_payment_per_person'][$row['person_id']]['amount'] -= $row['amount'];    
+        }
+        
+        $arr_data['list_payment_per_person_details'][$row['person_id']][$row['payment_date']][$row['payment_id']]['amount'] = $row['amount'];    
+        $arr_data['list_payment_per_person_details'][$row['person_id']][$row['payment_date']][$row['payment_id']]['payment_type_id'] = $row['payment_type_id'];    
     }
     ?>
         <div class="container">
             <h1>Book Report</h1>
+            <button type="button" onclick="document.getElementById('panel_summary').style.display = 'none';document.getElementById('panel_per_person').style.display = '';">Per Person</button>
+            
+            <button type="button" onclick="document.getElementById('panel_summary').style.display = '';document.getElementById('panel_per_person').style.display = 'none';">Summary</button>
             <hr>
-            <div id="report_book">
+            <div id="panel_per_person" style="">
+                <table>
+                    <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>Item</th>
+                        <th>Tax</th>
+                        <th>Discount</th>
+                        <th>Delivery</th>
+                        <th>Adjustment</th>
+                        <th>Other</th>
+                        <th>Total</th>
+                        <th>Payment</th>
+                        <th>Remaining</th>
+                    </tr>
+                    <?php
+                    if(count($arr_data['list_split_bill_per_person_sum']) == 0)
+                    {
+                        echo '<tr><td>No Data</td></tr>';
+                    }
+                    else
+                    {
+                        $tot['item_amount'] = 0;
+                        $tot['tax_amount'] = 0;
+                        $tot['discount_amount'] = 0;
+                        $tot['delivery_amount'] = 0;
+                        $tot['adjustment_amount'] = 0;
+                        $tot['other_amount'] = 0;
+                        $tot['total_sb'] = 0;
+                        $tot['payment'] = 0;
+                        $tot['remaining'] = 0;
+                        foreach($arr_data['list_split_bill_per_person_sum'] as $person_id => $valz)
+                        {
+                            $payment = isset($arr_data['list_payment_per_person'][$person_id]['amount']) ? $arr_data['list_payment_per_person'][$person_id]['amount'] : 0;
+                            $remaining = $valz['total_sb'] - $payment; 
+                        ?>
+                            <tr>
+                                <td><?=$valz['initial_name']?></td>
+                                <td><?=$valz['person_name']?></td>
+                                <td align="right"><?=parsenumber($valz['item_amount'],2)?></td>
+                                <td align="right"><?=parsenumber($valz['tax_amount'],2)?></td>
+                                <td align="right"><?=parsenumber($valz['discount_amount'],2)?></td>
+                                <td align="right"><?=parsenumber($valz['delivery_amount'],2)?></td>
+                                <td align="right"><?=parsenumber($valz['adjustment_amount'],2)?></td>
+                                <td align="right"><?=parsenumber($valz['other_amount'],2)?></td>
+                                <td align="right"><?=parsenumber($valz['total_sb'],2)?></td>
+                                <td align="right"><?=parsenumber($payment,2)?></td>
+                                <td align="right"><?=parsenumber($remaining,2)?></td>
+                            </tr>
+                        <?php
+
+                            $tot['item_amount'] += $valz['item_amount'];
+                            $tot['tax_amount'] += $valz['tax_amount'];
+                            $tot['discount_amount'] += $valz['discount_amount'];
+                            $tot['delivery_amount'] += $valz['delivery_amount'];
+                            $tot['adjustment_amount'] += $valz['adjustment_amount'];
+                            $tot['other_amount'] += $valz['other_amount'];
+                            $tot['total_sb'] += $valz['total_sb'];
+                            $tot['payment'] += $payment;
+                            $tot['remaining'] += $remaining;
+                        }
+                    }
+                    ?>
+                    <tr>
+                        <td colspan="2" align="right"><b>Total</b></td>
+                        <td align="right"><b><?=parsenumber($tot['item_amount'],2)?></b></td>
+                        <td align="right"><b><?=parsenumber($tot['tax_amount'],2)?></b></td>
+                        <td align="right"><b><?=parsenumber($tot['discount_amount'],2)?></b></td>
+                        <td align="right"><b><?=parsenumber($tot['delivery_amount'],2)?></b></td>
+                        <td align="right"><b><?=parsenumber($tot['adjustment_amount'],2)?></b></td>
+                        <td align="right"><b><?=parsenumber($tot['other_amount'],2)?></b></td>
+                        <td align="right"><b><?=parsenumber($tot['total_sb'],2)?></b></td>
+                        <td align="right"><b><?=parsenumber($tot['payment'],2)?></b></td>
+                        <td align="right"><b><?=parsenumber($tot['remaining'],2)?></b></td>
+                    </tr>
+                </table>
+            </div>
+            <div id="panel_summary" style="display:none">
                 <table>
                     <tr>
                         <th>Date</th>
@@ -3405,6 +3726,7 @@ elseif($page == 'book_report')
                         <th>Adjustment</th>
                         <th>Other</th>
                         <th>Total</th>
+                        <th>Action</th>
                     </tr>
                     <?php
                         if(count($arr_data['list_invoice']) == 0)
@@ -3459,6 +3781,9 @@ elseif($page == 'book_report')
                                         <td align="right"><?=parsenumber($value['adjustment_amount'],2)?></td>
                                         <td align="right"><?=parsenumber($value['other_amount'],2)?></td>
                                         <td align="right"><?=parsenumber($value['total_purchase'],2)?></td>
+                                        <td>
+                                            <a href="<?=APP_URL?>?page=invoice_add_edit&invoice_id=<?=$invoice_id?>&share_code=<?=$g_share_code?>" target="_blank" class="bg-success button color-white">View</a>
+                                        </td>
                                     </tr>
                                 <?php
                                     $show_date = '';
@@ -3478,7 +3803,7 @@ elseif($page == 'book_report')
                                                                 document.getElementById(\'datatd__sb__'.$sb_id.'\').value = \'1\'; 
                                                                 this.innerHTML = \'[-]\';  
                                                                 
-                                                                let data_list = document.getElementsByClassName(\'datalist__sb__'.$invoice_id.'\');
+                                                                let data_list = document.getElementsByClassName(\'datalist__sb__'.$sb_id.'\');
                                                                 for(let x = 0; x < data_list.length; x++)
                                                                 {
                                                                     data_list[x].style.display = \'\';     
@@ -3488,7 +3813,7 @@ elseif($page == 'book_report')
                                                             {
                                                                 document.getElementById(\'datatd__sb__'.$sb_id.'\').value = \'0\';
                                                                 this.innerHTML = \'[+]\';
-                                                                let data_list = document.getElementsByClassName(\'datalist__sb__'.$invoice_id.'\');
+                                                                let data_list = document.getElementsByClassName(\'datalist__sb__'.$sb_id.'\');
                                                                 for(let x = 0; x < data_list.length; x++)
                                                                 {
                                                                     data_list[x].style.display = \'none\';     
@@ -3539,6 +3864,7 @@ elseif($page == 'book_report')
                     ?>
                 </table>
             </div>
+            
         </div>
     <?php
 }
