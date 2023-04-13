@@ -26,7 +26,11 @@ elseif($page == 'login')
                     </div>
                 </div>
                 <div class="col-12 col-lg-9">
-                    <img src="<?=APP_URL?>/assets/anjing.jpg" style="width: 210px;" class="mt-2">
+                    <div class="bg-warning p-2 border-1 bc-black d-inline-block text-center">
+                        <h1><b>DANGER!</b></h1>
+                        <img src="<?=APP_URL?>/assets/anjing.jpg" style="width: 210px;" class="mt-2">
+                        <h1><b>BEWARE OF THE DOG</b></h1>
+                    </div>
                 </div>
             </div>
         </form>
@@ -775,20 +779,34 @@ elseif($page == 'invoice_add_edit')
                             
                                 
                         <label>Platform</label>
-                        <select name="platform_id">
-                            <option value="0">-</option>
+                        
                             <?php
-                            if(count($arr_data['list_platform']) > 0)
+                            if($read_only)
                             {
-                                foreach($arr_data['list_platform'] as $platform_id => $val)
-                                {
-                                ?>
-                                    <option value="<?=$platform_id?>"<?=isset($data_invoice['platform_id']) ? ($data_invoice['platform_id'] == $platform_id ? ' selected' : '') : ''?>><?=$val['name']?></option>
-                                <?php
-                                }
+                                echo '<br>'.(isset($data_invoice['platform_id']) ? $arr_data['list_platform'][$data_invoice['platform_id']]['name'] : '-').'<br><br>';
                             }
+                            else
+                            {
+                                if(count($arr_data['list_platform']) > 0)
+                                {
+                                    ?>
+                                    <select name="platform_id">
+                                        <option value="0">-</option>
+                                    <?php
+                                    foreach($arr_data['list_platform'] as $platform_id => $val)
+                                    {
+                                    ?>
+                                        <option value="<?=$platform_id?>"<?=isset($data_invoice['platform_id']) ? ($data_invoice['platform_id'] == $platform_id ? ' selected' : '') : ''?>><?=$val['name']?></option>
+                                    <?php
+                                    }
+                                    ?>
+                                    </select>
+                                    <?php
+                                }    
+                            }
+                                
                             ?>
-                        </select>
+                        
                         <?php
                         $js_tot = '
                             let data_list = document.getElementsByClassName(\'select__product\');
@@ -816,16 +834,71 @@ elseif($page == 'invoice_add_edit')
                         ';
                         ?>
                         <label>Tax</label>
-                        <input onkeyup="<?=$js_tot?>" class="text-right" type="text" id="tax_amount" name="tax_amount" value="<?=isset($data_invoice['tax_amount']) && $data_invoice['tax_amount'] != 0 ? $data_invoice['tax_amount'] : ''?>">
+                        <?php
+                            if($read_only)
+                            {
+                                echo '<br>'.(isset($data_invoice['tax_amount']) && $data_invoice['tax_amount'] != 0 ? parsenumber($data_invoice['tax_amount'],2) : '').'<br><br>';    
+                            }
+                            else
+                            {
+                            ?>
+                                <input onkeyup="<?=$js_tot?>" class="text-right" type="text" id="tax_amount" name="tax_amount" value="<?=isset($data_invoice['tax_amount']) && $data_invoice['tax_amount'] != 0 ? $data_invoice['tax_amount'] : ''?>">
+                            <?php
+                            }
+                        ?>
                         <label>Discount</label>
-                        <input onkeyup="<?=$js_tot?>" class="text-right" type="text" id="discount_amount" name="discount_amount" value="<?=isset($data_invoice['discount_amount']) && $data_invoice['discount_amount'] != 0 ? $data_invoice['discount_amount'] : ''?>">
+                        <?php
+                            if($read_only)
+                            {
+                                echo '<br>'.(isset($data_invoice['discount_amount']) && $data_invoice['discount_amount'] != 0 ? parsenumber($data_invoice['discount_amount'],2) : '').'<br><br>';    
+                            }
+                            else
+                            {
+                            ?>
+                                <input onkeyup="<?=$js_tot?>" class="text-right" type="text" id="discount_amount" name="discount_amount" value="<?=isset($data_invoice['discount_amount']) && $data_invoice['discount_amount'] != 0 ? $data_invoice['discount_amount'] : ''?>">
+                            <?php    
+                            }
+                        ?>
                         <label>Delivery</label>
-                        <input onkeyup="<?=$js_tot?>" class="text-right" type="text" id="delivery_amount" name="delivery_amount" value="<?=isset($data_invoice['delivery_amount']) && $data_invoice['delivery_amount'] != 0 ? $data_invoice['delivery_amount'] : ''?>">
+                        <?php
+                            if($read_only)
+                            {
+                                echo '<br>'.(isset($data_invoice['delivery_amount']) && $data_invoice['delivery_amount'] != 0 ? parsenumber($data_invoice['delivery_amount'],2) : '').'<br><br>';    
+                            }
+                            else
+                            {
+                            ?>
+                                <input onkeyup="<?=$js_tot?>" class="text-right" type="text" id="delivery_amount" name="delivery_amount" value="<?=isset($data_invoice['delivery_amount']) && $data_invoice['delivery_amount'] != 0 ? $data_invoice['delivery_amount'] : ''?>">
+                            <?php
+                            }
+                        ?>
                         
                         <label>Other</label>
-                        <input onkeyup="<?=$js_tot?>" class="text-right" type="text" id="other_amount" name="other_amount" value="<?=isset($data_invoice['other_amount']) && $data_invoice['other_amount'] != 0 ? $data_invoice['other_amount'] : ''?>">
+                        <?php
+                            if($read_only)
+                            {
+                                echo '<br>'.(isset($data_invoice['other_amount']) && $data_invoice['other_amount'] != 0 ? parsenumber($data_invoice['other_amount'],2) : '').'<br><br>';    
+                            }
+                            else
+                            {
+                            ?>
+                                <input onkeyup="<?=$js_tot?>" class="text-right" type="text" id="other_amount" name="other_amount" value="<?=isset($data_invoice['other_amount']) && $data_invoice['other_amount'] != 0 ? $data_invoice['other_amount'] : ''?>">
+                            <?php
+                            }
+                        ?>
                         <label>Adjustment</label>
-                        <input onkeyup="<?=$js_tot?>" class="text-right" type="text" id="adjustment_amount" name="adjustment_amount" value="<?=isset($data_invoice['adjustment_amount']) && $data_invoice['adjustment_amount'] != 0 ? $data_invoice['adjustment_amount'] : ''?>">
+                        <?php
+                            if($read_only)
+                            {
+                                echo '<br>'.(isset($data_invoice['adjustment_amount']) && $data_invoice['adjustment_amount'] != 0 ? parsenumber($data_invoice['adjustment_amount'],2) : '').'<br><br>';    
+                            }
+                            else
+                            {
+                            ?>
+                                <input onkeyup="<?=$js_tot?>" class="text-right" type="text" id="adjustment_amount" name="adjustment_amount" value="<?=isset($data_invoice['adjustment_amount']) && $data_invoice['adjustment_amount'] != 0 ? $data_invoice['adjustment_amount'] : ''?>">
+                            <?php
+                            }
+                        ?>
                         <hr>
                         <b>Grand Total</b>
                         <div id="grand_total" class="text-right"><?=parsenumber($grand_total,2)?></div>
@@ -886,6 +959,13 @@ elseif($page == 'invoice_add_edit')
                                                 }
                                                 '.$js_calc.'    
                                             ';
+                                        
+                                        if($read_only)
+                                        {
+                                            echo '<br>'.(isset($arr_data['list_product'][$x]['rm_id']) ? $arr_data['list_rm'][$arr_data['list_product'][$x]['rm_id']]['name'] : '-').'<br><br>';
+                                        }
+                                        else
+                                        {
                                         ?>
                                         <select onchange="<?=$js?>" class="select__product" name="product_list[<?=$x?>][product_id]" id="input__<?=$x?>__product_id">
                                             <option value="0">-</option>
@@ -901,12 +981,39 @@ elseif($page == 'invoice_add_edit')
                                                 }
                                             ?>
                                         </select>
+                                        <?php
+                                        }
+                                        ?>
                                     </td>
                                     <td>
-                                        <input onkeyup="<?=$js_calc?>" class="text-right" type="text" name="product_list[<?=$x?>][qty]" id="input__<?=$x?>__qty" value="<?=isset($arr_data['list_product'][$x]['qty']) ? $arr_data['list_product'][$x]['qty'] : ''?>">
+                                        <?php
+                                            if($read_only)
+                                            {
+                                                echo isset($arr_data['list_product'][$x]['qty']) ? parsenumber($arr_data['list_product'][$x]['qty'],2) : '';        
+                                            }
+                                            else
+                                            {
+                                            ?>
+                                                <input onkeyup="<?=$js_calc?>" class="text-right" type="text" name="product_list[<?=$x?>][qty]" id="input__<?=$x?>__qty" value="<?=isset($arr_data['list_product'][$x]['qty']) ? $arr_data['list_product'][$x]['qty'] : ''?>">
+                                            <?php
+                                            }
+                                        ?>
+                                        
                                     </td>
                                     <td>
-                                        <input onkeyup="<?=$js_calc?>" class="text-right" type="text" name="product_list[<?=$x?>][price]" id="input__<?=$x?>__price" value="<?=isset($arr_data['list_product'][$x]['price']) ? $arr_data['list_product'][$x]['price'] : ''?>">
+                                        <?php
+                                            if($read_only)
+                                            {
+                                                echo isset($arr_data['list_product'][$x]['price']) ? parsenumber($arr_data['list_product'][$x]['price'],2) : '';    
+                                            }
+                                            else
+                                            {
+                                            ?>
+                                                <input onkeyup="<?=$js_calc?>" class="text-right" type="text" name="product_list[<?=$x?>][price]" id="input__<?=$x?>__price" value="<?=isset($arr_data['list_product'][$x]['price']) ? $arr_data['list_product'][$x]['price'] : ''?>">
+                                            <?php
+                                            }
+                                        ?>
+                                        
                                     </td>
                                         
                                     <td align="right">
