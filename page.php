@@ -3565,13 +3565,13 @@ elseif($page == 'book_report')
     {
         $arr_data['list_invoice'][$row['invoice_date']][$row['invoice_id']]['title'] = 'INV/'.$row['book_id'].'/'.$row['invoice_id'];    
         $arr_data['list_invoice'][$row['invoice_date']][$row['invoice_id']]['restaurant_name'] = $row['restaurant_name'];    
-        $arr_data['list_invoice'][$row['invoice_date']][$row['invoice_id']]['total_item'] = (int) $row['total_item'];    
-        $arr_data['list_invoice'][$row['invoice_date']][$row['invoice_id']]['tax_amount'] = (int) $row['tax_amount'];    
-        $arr_data['list_invoice'][$row['invoice_date']][$row['invoice_id']]['discount_amount'] = (int) $row['discount_amount'];    
-        $arr_data['list_invoice'][$row['invoice_date']][$row['invoice_id']]['delivery_amount'] = (int) $row['delivery_amount'];    
-        $arr_data['list_invoice'][$row['invoice_date']][$row['invoice_id']]['adjustment_amount'] = (int) $row['adjustment_amount'];    
-        $arr_data['list_invoice'][$row['invoice_date']][$row['invoice_id']]['other_amount'] = (int) $row['other_amount'];        
-        $arr_data['list_invoice'][$row['invoice_date']][$row['invoice_id']]['total_purchase'] = (int) $row['total_purchase'];        
+        $arr_data['list_invoice'][$row['invoice_date']][$row['invoice_id']]['total_item'] = (float) $row['total_item'];    
+        $arr_data['list_invoice'][$row['invoice_date']][$row['invoice_id']]['tax_amount'] = (float) $row['tax_amount'];    
+        $arr_data['list_invoice'][$row['invoice_date']][$row['invoice_id']]['discount_amount'] = (float) $row['discount_amount'];    
+        $arr_data['list_invoice'][$row['invoice_date']][$row['invoice_id']]['delivery_amount'] = (float) $row['delivery_amount'];    
+        $arr_data['list_invoice'][$row['invoice_date']][$row['invoice_id']]['adjustment_amount'] = (float) $row['adjustment_amount'];    
+        $arr_data['list_invoice'][$row['invoice_date']][$row['invoice_id']]['other_amount'] = (float) $row['other_amount'];        
+        $arr_data['list_invoice'][$row['invoice_date']][$row['invoice_id']]['total_purchase'] = (float) $row['total_purchase'];        
     }
 
     //SB
@@ -3618,13 +3618,13 @@ elseif($page == 'book_report')
     while($row = $result->fetchArray())
     {
         $arr_data['list_split_bill'][$row['invoice_id']][$row['sb_id']]['title'] = 'SB/'.$row['book_id'].'/'.$row['invoice_id'].'/'.$row['sb_id'];    
-        $arr_data['list_split_bill'][$row['invoice_id']][$row['sb_id']]['total_sb'] = (int) $row['total_sb'];    
-        $arr_data['list_split_bill'][$row['invoice_id']][$row['sb_id']]['item_amount'] = (int) $row['item_amount'];    
-        $arr_data['list_split_bill'][$row['invoice_id']][$row['sb_id']]['tax_amount'] = (int) $row['tax_amount'];    
-        $arr_data['list_split_bill'][$row['invoice_id']][$row['sb_id']]['discount_amount'] = (int) $row['discount_amount'];    
-        $arr_data['list_split_bill'][$row['invoice_id']][$row['sb_id']]['delivery_amount'] = (int) $row['delivery_amount'];    
-        $arr_data['list_split_bill'][$row['invoice_id']][$row['sb_id']]['other_amount'] = (int) $row['other_amount'];    
-        $arr_data['list_split_bill'][$row['invoice_id']][$row['sb_id']]['adjustment_amount'] = (int) $row['adjustment_amount'];    
+        $arr_data['list_split_bill'][$row['invoice_id']][$row['sb_id']]['total_sb'] = (float) $row['total_sb'];    
+        $arr_data['list_split_bill'][$row['invoice_id']][$row['sb_id']]['item_amount'] = (float) $row['item_amount'];    
+        $arr_data['list_split_bill'][$row['invoice_id']][$row['sb_id']]['tax_amount'] = (float) $row['tax_amount'];    
+        $arr_data['list_split_bill'][$row['invoice_id']][$row['sb_id']]['discount_amount'] = (float) $row['discount_amount'];    
+        $arr_data['list_split_bill'][$row['invoice_id']][$row['sb_id']]['delivery_amount'] = (float) $row['delivery_amount'];    
+        $arr_data['list_split_bill'][$row['invoice_id']][$row['sb_id']]['other_amount'] = (float) $row['other_amount'];    
+        $arr_data['list_split_bill'][$row['invoice_id']][$row['sb_id']]['adjustment_amount'] = (float) $row['adjustment_amount'];    
         $arr_data['list_split_bill'][$row['invoice_id']][$row['sb_id']]['sb_date'] = $row['sb_date'];    
     }
     
@@ -3671,13 +3671,13 @@ elseif($page == 'book_report')
 
     while($row = $result->fetchArray())
     {
-        $arr_data['list_split_bill_per_person'][$row['sb_id']][$row['person_id']]['total_sb'] = (int) $row['total_sb'];    
-        $arr_data['list_split_bill_per_person'][$row['sb_id']][$row['person_id']]['item_amount'] = (int) $row['item_amount'];    
-        $arr_data['list_split_bill_per_person'][$row['sb_id']][$row['person_id']]['tax_amount'] = (int) $row['tax_amount'];    
-        $arr_data['list_split_bill_per_person'][$row['sb_id']][$row['person_id']]['discount_amount'] = (int) $row['discount_amount'];    
-        $arr_data['list_split_bill_per_person'][$row['sb_id']][$row['person_id']]['delivery_amount'] = (int) $row['delivery_amount'];    
-        $arr_data['list_split_bill_per_person'][$row['sb_id']][$row['person_id']]['other_amount'] = (int) $row['other_amount'];    
-        $arr_data['list_split_bill_per_person'][$row['sb_id']][$row['person_id']]['adjustment_amount'] = (int) $row['adjustment_amount'];    
+        $arr_data['list_split_bill_per_person'][$row['sb_id']][$row['person_id']]['total_sb'] = (float) $row['total_sb'];    
+        $arr_data['list_split_bill_per_person'][$row['sb_id']][$row['person_id']]['item_amount'] = (float) $row['item_amount'];    
+        $arr_data['list_split_bill_per_person'][$row['sb_id']][$row['person_id']]['tax_amount'] = (float) $row['tax_amount'];    
+        $arr_data['list_split_bill_per_person'][$row['sb_id']][$row['person_id']]['discount_amount'] = (float) $row['discount_amount'];    
+        $arr_data['list_split_bill_per_person'][$row['sb_id']][$row['person_id']]['delivery_amount'] = (float) $row['delivery_amount'];    
+        $arr_data['list_split_bill_per_person'][$row['sb_id']][$row['person_id']]['other_amount'] = (float) $row['other_amount'];    
+        $arr_data['list_split_bill_per_person'][$row['sb_id']][$row['person_id']]['adjustment_amount'] = (float) $row['adjustment_amount'];    
         $arr_data['list_split_bill_per_person'][$row['sb_id']][$row['person_id']]['person_name'] = $row['person_name'];    
         $arr_data['list_split_bill_per_person'][$row['sb_id']][$row['person_id']]['initial_name'] = $row['initial_name'];
         
@@ -3691,16 +3691,20 @@ elseif($page == 'book_report')
             $arr_data['list_split_bill_per_person_sum'][$row['person_id']]['other_amount'] = 0;    
             $arr_data['list_split_bill_per_person_sum'][$row['person_id']]['adjustment_amount'] = 0;
         }
-        $arr_data['list_split_bill_per_person_sum'][$row['person_id']]['total_sb'] += (int) $row['total_sb'];    
-        $arr_data['list_split_bill_per_person_sum'][$row['person_id']]['item_amount'] += (int) $row['item_amount'];    
-        $arr_data['list_split_bill_per_person_sum'][$row['person_id']]['tax_amount'] += (int) $row['tax_amount'];    
-        $arr_data['list_split_bill_per_person_sum'][$row['person_id']]['discount_amount'] += (int) $row['discount_amount'];    
-        $arr_data['list_split_bill_per_person_sum'][$row['person_id']]['delivery_amount'] += (int) $row['delivery_amount'];    
-        $arr_data['list_split_bill_per_person_sum'][$row['person_id']]['other_amount'] += (int) $row['other_amount'];    
-        $arr_data['list_split_bill_per_person_sum'][$row['person_id']]['adjustment_amount'] += (int) $row['adjustment_amount'];    
+        $arr_data['list_split_bill_per_person_sum'][$row['person_id']]['total_sb'] += (float) $row['total_sb'];    
+        $arr_data['list_split_bill_per_person_sum'][$row['person_id']]['item_amount'] += (float) $row['item_amount'];    
+        $arr_data['list_split_bill_per_person_sum'][$row['person_id']]['tax_amount'] += (float) $row['tax_amount'];    
+        $arr_data['list_split_bill_per_person_sum'][$row['person_id']]['discount_amount'] += (float) $row['discount_amount'];    
+        $arr_data['list_split_bill_per_person_sum'][$row['person_id']]['delivery_amount'] += (float) $row['delivery_amount'];    
+        $arr_data['list_split_bill_per_person_sum'][$row['person_id']]['other_amount'] += (float) $row['other_amount'];    
+        $arr_data['list_split_bill_per_person_sum'][$row['person_id']]['adjustment_amount'] += (float) $row['adjustment_amount'];    
         $arr_data['list_split_bill_per_person_sum'][$row['person_id']]['person_name'] = $row['person_name'];    
-        $arr_data['list_split_bill_per_person_sum'][$row['person_id']]['initial_name'] = $row['initial_name']; 
+        $arr_data['list_split_bill_per_person_sum'][$row['person_id']]['initial_name'] = $row['initial_name'];
+        
+        //echo $row['item_amount'].'<br>'; 
     }
+    
+    //print('<pre>'.print_r($arr_data['list_split_bill_per_person_sum'],true).'</pre>');
 
     //Load Payment
     $query = "
