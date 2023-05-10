@@ -135,6 +135,102 @@ if($_SERVER['REQUEST_METHOD'] === 'POST')
                 }    
             }
                     
+        }
+        elseif(isset($_POST['archive']))
+        {
+            //die('MASUK');
+            $book_id = isset($_POST['book_id']) ? $_POST['book_id'] : '';
+            $_SESSION['mess'] = '';
+           
+            if(! preg_match('/^[0-9]*$/', $book_id)) 
+            {
+                $_SESSION['mess'] .= 'Book ID Invalid<br>';        
+            }
+            
+            if($_SESSION['mess'] == '')
+            {
+                if($book_id == 0)
+                {
+                    $_SESSION['mess'] .= 'Book ID Invalid<br>';
+                }
+                else
+                {
+                    $final_book_id = $book_id;
+                    $query = "
+                        UPDATE
+                            book
+                        SET
+                            status_id = '2'
+                        WHERE
+                            book_id = '".$final_book_id."'
+                    ";
+                    //die($query);
+                    if($db->query($query))
+                    {
+                        $_SESSION['mess'] .= 'Update Successfully';
+                        header('location: '.APP_URL.'?page=book');
+                         
+                    }
+                    else
+                    {
+                        $_SESSION['mess'] .= 'Update Failed';
+                      
+                    }  
+                    
+                    //die($_SESSION['mess']);  
+                }
+                
+                    
+            }
+                    
+        }
+        elseif(isset($_POST['active']))
+        {
+            //die('MASUK');
+            $book_id = isset($_POST['book_id']) ? $_POST['book_id'] : '';
+            $_SESSION['mess'] = '';
+           
+            if(! preg_match('/^[0-9]*$/', $book_id)) 
+            {
+                $_SESSION['mess'] .= 'Book ID Invalid<br>';        
+            }
+            
+            if($_SESSION['mess'] == '')
+            {
+                if($book_id == 0)
+                {
+                    $_SESSION['mess'] .= 'Book ID Invalid<br>';
+                }
+                else
+                {
+                    $final_book_id = $book_id;
+                    $query = "
+                        UPDATE
+                            book
+                        SET
+                            status_id = '1'
+                        WHERE
+                            book_id = '".$final_book_id."'
+                    ";
+                    //die($query);
+                    if($db->query($query))
+                    {
+                        $_SESSION['mess'] .= 'Update Successfully';
+                        header('location: '.APP_URL.'?page=book');
+                         
+                    }
+                    else
+                    {
+                        $_SESSION['mess'] .= 'Update Failed';
+                      
+                    }  
+                    
+                    //die($_SESSION['mess']);  
+                }
+                
+                    
+            }
+                    
         }    
     }
     elseif($page == 'restaurant_add_edit')

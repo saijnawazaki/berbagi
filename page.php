@@ -79,6 +79,7 @@ elseif($page == 'home')
 elseif($page == 'book')
 {
     $arr_data['list_book'] = array();
+    $arr_data['list_book_archive'] = array();
     $query = "
         select
             *
@@ -94,7 +95,15 @@ elseif($page == 'book')
     
     while($row = $result->fetchArray())
     {
-        $arr_data['list_book'][$row['book_id']]['title'] = $row['book_title'];    
+        if($row['status_id'] == 1)
+        {
+            $arr_data['list_book'][$row['book_id']]['title'] = $row['book_title'];   
+        }
+        elseif($row['status_id'] == 2)
+        {
+            $arr_data['list_book_archive'][$row['book_id']]['title'] = $row['book_title'];   
+        }
+            
     }
 ?>
     <div class="container">
@@ -110,9 +119,35 @@ elseif($page == 'book')
         <div class="text-right">
             <a href="<?=APP_URL.'?page=book_add_edit&book_id=0'?>" class="button bg-success color-white">New</a>
         </div>
-        <hr>
         
-        <div class="row">
+        <div class="mb-4">
+            <?php
+                $js = '
+                    if(this.innerHTML == \'Active\')
+                    {
+                        document.getElementById(\'book_active\').style.display = \'\';
+                        document.getElementById(\'book_archived\').style.display = \'none\';
+                        document.getElementById(\'book_active_but\').classList.add(\'bg-primary\');
+                        document.getElementById(\'book_active_but\').classList.add(\'color-white\');
+                        document.getElementById(\'book_archived_but\').classList.remove(\'bg-primary\');
+                        document.getElementById(\'book_archived_but\').classList.remove(\'color-white\');
+                    }
+                    else
+                    {
+                        document.getElementById(\'book_active\').style.display = \'none\';
+                        document.getElementById(\'book_archived\').style.display = \'\';
+                        document.getElementById(\'book_active_but\').classList.remove(\'bg-primary\');
+                        document.getElementById(\'book_active_but\').classList.remove(\'color-white\'); 
+                        document.getElementById(\'book_archived_but\').classList.add(\'bg-primary\');
+                        document.getElementById(\'book_archived_but\').classList.add(\'color-white\');
+                    }  
+                ';
+            ?>
+            <button id="book_active_but" type="button" class="me-3 bg-primary color-white" onclick="<?=$js?>">Active</button>
+            <button id="book_archived_but" type="button" onclick="<?=$js?>">Archived</button>
+        </div>
+        
+        <div class="row" id="book_active">
             <?php
                 if(count($arr_data['list_book']) == 0)
                 {
@@ -123,8 +158,44 @@ elseif($page == 'book')
                 <?php
                 }
                 else
-                {
+                {   
                     foreach($arr_data['list_book'] as $book_id => $val)
+                    {
+                    ?>
+                        <div class="col-6 col-lg-2 text-center mb-3">
+                            <a href="<?=APP_URL.'?page=book_details&book_id='.$book_id?>" class="color-black">
+                                <div class="bg-light br-t-r-2 br-b-r-2 text-left border-1 bc-muted position-relative" style="height: 250px;">
+                                    <span class="position-absolute color-muted me-2 mb-2" style="bottom:0;right:0;"><?=$val['title']?></span>
+                                </div>
+                                <?=$val['title']?>
+                                <div>
+                                    <small>
+                                        <a href="<?=APP_URL.'?page=book_add_edit&book_id='.$book_id?>">Edit</a>
+                                    </small>
+                                </div>
+                            </a>
+                        </div>
+                    <?php    
+                    }
+                    
+                }
+            ?>
+            
+            
+        </div>
+        <div class="row" id="book_archived" style="display: none;">
+            <?php
+                if(count($arr_data['list_book_archive']) == 0)
+                {
+                ?>
+                    <div class="col-12 text-center">
+                        No Data
+                    </div>
+                <?php
+                }
+                else
+                {                                             
+                   foreach($arr_data['list_book_archive'] as $book_id => $val)
                     {
                     ?>
                         <div class="col-6 col-lg-2 text-center mb-3">
@@ -199,6 +270,25 @@ elseif($page == 'book_add_edit')
                     <input type="text" name="book_title" value="<?=isset($data['book_title']) ? $data['book_title'] : ''?>">
                     <hr>
                     <input type="hidden" name="book_id" value="<?=$g_book_id?>">
+                    
+                    <?php
+                        if($g_book_id > 0)
+                        {
+                            if($data['status_id'] == 1)
+                            {
+                            ?>
+                                <input type="submit" name="archive" class="bg-warning color-black me-4" value="Archive">
+                            <?php
+                            }
+                            else
+                            {
+                            ?>
+                                <input type="submit" name="active" class="bg-warning color-black me-4" value="UnArchive">
+                            <?php    
+                            }
+                        }
+                    ?>
+                    
                     <input type="submit" name="submit" class="bg-primary color-white" value="Submit">
                 </form>   
             </div>
