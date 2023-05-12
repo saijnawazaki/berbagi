@@ -317,6 +317,48 @@ if($_SERVER['REQUEST_METHOD'] === 'POST')
                 }    
             }
                     
+        }
+        elseif(isset($_POST['delete']))
+        {
+            $restaurant_id = isset($_POST['restaurant_id']) ? $_POST['restaurant_id'] : '';
+            $_SESSION['mess'] = '';
+            
+            if(! preg_match('/^[0-9]*$/', $restaurant_id)) 
+            {
+                $_SESSION['mess'] .= 'Restaurant ID Invalid<br>';        
+            }
+            
+            if($_SESSION['mess'] == '')
+            {
+                if($restaurant_id == 0)
+                {
+                    $_SESSION['mess'] .= 'Restaurant ID Invalid<br>';
+                }
+                else
+                {
+                    $final_restaurant_id = $restaurant_id;
+                    $query = "
+                        DELETE FROM
+                            restaurant
+                        WHERE
+                            restaurant_id = '".$final_restaurant_id."'
+                    ";
+                    
+                    if($db->query($query))
+                    {
+                        $_SESSION['mess'] .= 'Add Successfully';
+                        header('location: '.APP_URL.'?page=restaurant');     
+                    }
+                    else
+                    {
+                        $_SESSION['mess'] .= 'Added Failed';
+                      
+                    }
+                }
+                
+                        
+            }
+                    
         }    
     }
     elseif($page == 'restaurant_menu_add_edit')
@@ -538,6 +580,61 @@ if($_SERVER['REQUEST_METHOD'] === 'POST')
                 } 
                 
                 
+                   
+            }
+                    
+        }
+        elseif(isset($_POST['delete']))
+        {
+            $restaurant_id = isset($_POST['restaurant_id']) ? $_POST['restaurant_id'] : '';
+            $rm_id = isset($_POST['rm_id']) ? $_POST['rm_id'] : '';
+            $_SESSION['mess'] = '';
+            if(! preg_match('/^[0-9]*$/', $rm_id)) 
+            {
+                $_SESSION['mess'] .= 'RM ID Invalid<br>';        
+            }
+            
+            if(! preg_match('/^[0-9]*$/', $restaurant_id)) 
+            {
+                $_SESSION['mess'] .= 'Restaurant ID Invalid<br>';        
+            }
+            
+            if($_SESSION['mess'] == '')
+            {
+                if($rm_id == 0)
+                {
+                    $_SESSION['mess'] .= 'RM ID Invalid<br>';
+                }
+                else
+                {
+                    $final_id = $rm_id;
+                    $query = "
+                        DELETE FROM
+                            restaurant_menu
+                        WHERE
+                            rm_id = '".$final_id."'
+                    ";
+                    
+                    if($db->query($query))
+                    {
+                        if($_SESSION['mess'] == '')
+                        {
+                             $_SESSION['mess'] .= 'Added Successfully';
+                             header('location: '.APP_URL.'?page=restaurant_menu&restaurant_id='.$restaurant_id);    
+                                
+                        }
+                        else
+                        {
+                            $_SESSION['mess'] .= 'Added TAG Failed';   
+                        }
+                             
+                    }
+                    else
+                    {
+                        $_SESSION['mess'] .= 'Added Failed';
+                      
+                    } 
+                } 
                    
             }
                     

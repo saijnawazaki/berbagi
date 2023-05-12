@@ -1205,13 +1205,7 @@ elseif($page == 'restaurant')
                     foreach($arr_data['list_restaurant'] as $restaurant_id => $val)
                     {
                         $title_mod = $val['title'];             
-                        $title_len = strlen($val['title']);
-                        $title_mod = substr($val['title'],0,30);
-                        
-                        if($title_len > 30)
-                        {
-                            $title_mod .= '...';   
-                        } 
+                         
                     ?>
                         <div class="col-6 col-lg-2 text-center mb-3">
                             <a href="<?=APP_URL.'?page=restaurant_menu&restaurant_id='.$restaurant_id?>" class="color-black">
@@ -1257,6 +1251,19 @@ elseif($page == 'restaurant_add_edit')
         ";
         $result = $db->query($query);    
         $data = $result->fetchArray();
+        
+        //check boleh dihapus ?
+        $query = "
+            select
+                count(*) as jumlah
+            from
+                restaurant_menu
+            where
+                restaurant_id = '".$g_restaurant_id."'
+        ";
+        $result = $db->query($query);    
+        $row = $result->fetchArray();
+        $total_rm_check = isset($row['jumlah']) ? $row['jumlah'] : 0;
     }
 ?>
     <div class="container">
@@ -1280,6 +1287,14 @@ elseif($page == 'restaurant_add_edit')
                     <input type="text" name="restaurant_name" value="<?=isset($data['restaurant_name']) ? $data['restaurant_name'] : ''?>">
                     <hr>
                     <input type="hidden" name="restaurant_id" value="<?=$g_restaurant_id?>">
+                    <?php
+                        if($g_restaurant_id > 0 && $total_rm_check == 0)
+                        {
+                        ?>
+                            <input type="submit" name="delete" class="bg-danger color-white me-4" value="Delete">
+                        <?php
+                        }
+                    ?>
                     <input type="submit" name="submit" class="bg-primary color-white" value="Submit">
                 </form>   
             </div>
@@ -1424,6 +1439,8 @@ elseif($page == 'restaurant_menu_add_edit')
         $data = $result->fetchArray();
     }
     
+    $total_rm_check = 0;
+    
     if($g_rm_id > 0)
     {
         $query = "
@@ -1461,6 +1478,19 @@ elseif($page == 'restaurant_menu_add_edit')
             }
             $rm_tag .= $row['tag_name'];     
         }
+        
+        //check boleh dihapus ?
+        $query = "
+            select
+                count(*) as jumlah
+            from
+                invoice_details
+            where
+                rm_id = '".$g_rm_id."'
+        ";
+        $result = $db->query($query);    
+        $row = $result->fetchArray();
+        $total_rm_check = isset($row['jumlah']) ? $row['jumlah'] : 0;
     }
 ?>
     <div class="container">
@@ -1492,6 +1522,14 @@ elseif($page == 'restaurant_menu_add_edit')
                     <hr>
                     <input type="hidden" name="restaurant_id" value="<?=$g_restaurant_id?>">
                     <input type="hidden" name="rm_id" value="<?=$g_rm_id?>">
+                    <?php
+                        if($g_rm_id > 0 && $total_rm_check == 0)
+                        {
+                        ?>
+                            <input type="submit" name="delete" class="bg-danger color-white me-4" value="Delete">
+                        <?php
+                        }
+                    ?>
                     <input type="submit" name="submit" class="bg-primary color-white" value="Submit">
                 </form>   
             </div>
@@ -3008,6 +3046,9 @@ elseif($page == 'summary')
                     <label class="d-block">
                         <input type="checkbox" value="1" name="v_opt_initial_only"<?=isset($_GET['v_opt_initial_only']) && $_GET['v_opt_initial_only'] ? ' checked' : ''?>> Show Initial Only
                     </label>
+                    <label class="d-block">
+                        <input type="checkbox" value="1" name="v_opt_hide_me"<?=isset($_GET['v_opt_hide_me']) && $_GET['v_opt_hide_me'] ? ' checked' : ''?>> Hide Me
+                    </label>
                 </td>
             </tr>
             <tr>
@@ -3031,6 +3072,7 @@ elseif($page == 'summary')
                 $v_sort_by = trim($_GET['v_sort_by']);
                 $v_sort_by_type = trim($_GET['v_sort_by_type']);          
                 $v_opt_initial_only = (int) $_GET['v_opt_initial_only'];
+                $v_opt_hide_me = (int) isset($_GET['v_opt_hide_me']) ? $_GET['v_opt_hide_me'] : 0;
                 
                 $where_book_id = '';
                 if(in_array('all',$v_book_id))
@@ -3070,6 +3112,7 @@ elseif($page == 'summary')
                 }
                                         
                 $where_person_id = '';
+                $where_person_id_not = '';
 
                 if(!in_array('all',$v_person_id))
                 {
@@ -3083,6 +3126,18 @@ elseif($page == 'summary')
                         $where_person_id .= "'".$person_id."'";
                     }    
                 }
+                
+                if($v_opt_hide_me)
+                {
+                    $where_person_id_not = "'".$ses['person_id']."'";
+                }
+                
+                if($where_person_id_not != '')
+                {
+                    $where_person_id_not = "AND person.person_id not in (".$where_person_id_not.")";
+                }
+                
+                
 
                 if($where_person_id != '')
                 {
@@ -3151,6 +3206,7 @@ elseif($page == 'summary')
                             person
                             on person.person_id = split_bill_details.person_id
                             ".$where_person_id." 
+                            ".$where_person_id_not." 
                     ";
                     $result = $db->query($query) or die('error');
                     
@@ -3176,6 +3232,7 @@ elseif($page == 'summary')
                             person
                             on person.person_id = payment.person_id
                             ".$where_person_id."
+                            ".$where_person_id_not."
                         inner join
                             book
                             on book.book_id = payment.book_id
@@ -3377,10 +3434,14 @@ elseif($page == 'summary')
                         inner join
                             split_bill
                             on split_bill.sb_id = split_bill_details.sb_id
+                            and split_bill.sb_date between '".$v_date_from."' and '".$v_date_to."'
                         inner join
                             invoice
                             on invoice.invoice_id = split_bill.invoice_id
-                            and invoice.book_id = '".$g_book_id."'
+                        inner join
+                            book
+                            on book.book_id = invoice.book_id 
+                            ".$where_book_id."
                         inner join
                             restaurant
                             on restaurant.restaurant_id = invoice.restaurant_id 
@@ -3388,9 +3449,10 @@ elseif($page == 'summary')
                             person
                             on person.person_id = split_bill_details.person_id
                             ".$where_person_id."
+                            ".$where_person_id_not."
                         order by
                             split_bill.sb_date DESC 
-                    ";
+                    ";                   
                     $result = $db->query($query);
                     
                     while($row = $result->fetchArray())
@@ -3416,8 +3478,13 @@ elseif($page == 'summary')
                             person
                             on person.person_id = payment.person_id
                             ".$where_person_id." 
+                            ".$where_person_id_not."
+                        inner join
+                            book
+                            on book.book_id = payment.book_id 
+                            ".$where_book_id." 
                         where
-                            payment.book_id = '".$g_book_id."' 
+                            payment.payment_date between '".$v_date_from."' and '".$v_date_to."' 
                     ";
                     $result = $db->query($query);
                     
