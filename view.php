@@ -31,12 +31,12 @@ defined('APP_PATH') OR exit('No direct script access allowed');
     <header class="nav bg-black color-white">
         <div class="container">
             <div class="row">
-                <div class="col-12 col-sm-9">
+                <div class="col-2 col-sm-9">
                     <h1>
                         <img src="<?=APP_URL?>assets/berbagi.png" style="width: 34px;">
                     </h1>
                 </div>
-                <div class="col-sm-3 col-12">
+                <div class="col-sm-3 col-10">
                     <?php
                         if(isset($ses['user_id']))
                         {
@@ -70,7 +70,7 @@ defined('APP_PATH') OR exit('No direct script access allowed');
     <footer>
         <div class="container">
             <hr> 
-            <small>2022 saijnawazaki. Version: <?=APP_VERSION?> / Designed with Mafura</small>
+            <small>&copy; 2022 - 2023 saijnawazaki / Mana Studio. Version: <?=APP_VERSION?> / Designed with Mafura</small>
         </div> 
     </footer>
     <div role="alert" id="alert_mess" class="position-fixed top-0 left-0 width-fluid height-vh" style="display: none;">
@@ -89,88 +89,6 @@ defined('APP_PATH') OR exit('No direct script access allowed');
 
     <script src="<?=MAFURA_URL?>mafura.js"></script>
     <script>
-        function createRequestObject()
-        {
-            var ro;
-            var browser = navigator.appName;
-            if(browser == 'Microsoft Internet Explorer'){
-                ro = new ActiveXObject('Microsoft.XMLHTTP');
-            }else{
-                ro = new XMLHttpRequest();
-            }
-            return ro;
-        }
-        
-        var xmlhttp = createRequestObject();
-        var url = '<?=APP_URL?>';
-        
-        function getData(setting)
-        {
-            let mess = '';
-            if(setting.page == undefined)
-            {
-                mess += "Page Invalid\n";         
-            }    
-            else
-            {
-                if(setting.page == 'getSelectRestaurantMenuByRestaurantID')
-                {
-                    xmlhttp.open('get', url+'?page='+setting.page+'&restaurant_id='+setting.restaurantID, true);
-                    xmlhttp.onreadystatechange = function()
-                    {
-                        if((xmlhttp.readyState == 4) && (xmlhttp.status == 200))
-                        {
-                            let res = JSON.parse(xmlhttp.responseText);
-                            
-                            setting.targetSelect[0].innerHTML = '<option value="0" data-price="">-</option>';
-                            
-                            if(res.status == 'ok')
-                            {
-                                if(res.data.length > 0)
-                                {
-                                    for(let x = 0; x < res.data.length; x++)
-                                    {
-                                        setting.targetSelect[0].innerHTML += '<option value="'+res.data[x].id+'" data-price="'+res.data[x].last_price+'">'+res.data[x].name+'</option>';    
-                                    }
-                                }    
-                            }
-                            else
-                            {
-                                mess += "ERROR: "+res.status_mess+"\n";    
-                            }
-                            
-                            //one for all
-                            let master = setting.targetSelect[0].innerHTML;
-                            for(let x = 0; x < setting.targetSelect.length; x++)
-                            {
-                                setting.targetSelect[x].innerHTML = master;
-                                
-                                //price qty total empty
-                                let id = setting.targetSelect[x].id;
-                                let exp_id = id.split('__');
-                                
-                                document.getElementById('input__'+exp_id[1]+'__qty').value = '';     
-                                document.getElementById('input__'+exp_id[1]+'__price').value = '';     
-                                document.getElementById('input__'+exp_id[1]+'__total').innerHTML = '';     
-                            }
-                            
-                        }
-                        return false;
-                    }
-                    xmlhttp.send(null);     
-                }
-                else
-                {
-                    mess += "Page Invalid - Not Defined\n";    
-                }   
-            }
-            
-            if(mess != '')
-            {
-                console.log(mess);
-            }
-        }
-        
         /*https://stackoverflow.com/a/149099*/
         function formatNumber(number, decPlaces, decSep, thouSep) {
             decPlaces = isNaN(decPlaces = Math.abs(decPlaces)) ? 2 : decPlaces,

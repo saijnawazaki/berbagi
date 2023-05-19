@@ -1154,6 +1154,89 @@ elseif($page == 'invoice_add_edit')
             </div>    
         </form>
         <iframe style="width:100%;" class="border-1" name="iframe_post" src=""></iframe>
+        <script>
+            function createRequestObject()
+            {
+                var ro;
+                var browser = navigator.appName;
+                if(browser == 'Microsoft Internet Explorer'){
+                    ro = new ActiveXObject('Microsoft.XMLHTTP');
+                }else{
+                    ro = new XMLHttpRequest();
+                }
+                return ro;
+            }
+            
+            var xmlhttp = createRequestObject();
+            var url = '<?=APP_URL?>';
+            
+            function getData(setting)
+            {
+                let mess = '';
+                if(setting.page == undefined)
+                {
+                    mess += "Page Invalid\n";         
+                }    
+                else
+                {
+                    if(setting.page == 'getSelectRestaurantMenuByRestaurantID')
+                    {
+                        xmlhttp.open('get', url+'?page='+setting.page+'&restaurant_id='+setting.restaurantID, true);
+                        xmlhttp.onreadystatechange = function()
+                        {
+                            if((xmlhttp.readyState == 4) && (xmlhttp.status == 200))
+                            {
+                                let res = JSON.parse(xmlhttp.responseText);
+                                
+                                setting.targetSelect[0].innerHTML = '<option value="0" data-price="">-</option>';
+                                
+                                if(res.status == 'ok')
+                                {
+                                    if(res.data.length > 0)
+                                    {
+                                        for(let x = 0; x < res.data.length; x++)
+                                        {
+                                            setting.targetSelect[0].innerHTML += '<option value="'+res.data[x].id+'" data-price="'+res.data[x].last_price+'">'+res.data[x].name+'</option>';    
+                                        }
+                                    }    
+                                }
+                                else
+                                {
+                                    mess += "ERROR: "+res.status_mess+"\n";    
+                                }
+                                
+                                //one for all
+                                let master = setting.targetSelect[0].innerHTML;
+                                for(let x = 0; x < setting.targetSelect.length; x++)
+                                {
+                                    setting.targetSelect[x].innerHTML = master;
+                                    
+                                    //price qty total empty
+                                    let id = setting.targetSelect[x].id;
+                                    let exp_id = id.split('__');
+                                    
+                                    document.getElementById('input__'+exp_id[1]+'__qty').value = '';     
+                                    document.getElementById('input__'+exp_id[1]+'__price').value = '';     
+                                    document.getElementById('input__'+exp_id[1]+'__total').innerHTML = '';     
+                                }
+                                
+                            }
+                            return false;
+                        }
+                        xmlhttp.send(null);     
+                    }
+                    else
+                    {
+                        mess += "Page Invalid - Not Defined\n";    
+                    }   
+                }
+                
+                if(mess != '')
+                {
+                    console.log(mess);
+                }
+            }
+        </script>
     </div>
 <?php    
 }
@@ -1940,32 +2023,40 @@ elseif($page == 'split_bill_add_edit')
     
     //load details
     $arr_data['list_invoice_details'] = array();
-    $query = "
-        select
-            invoice_details.*,
-            restaurant_menu.rm_name
-        from
-            invoice_details
-        inner join
-            invoice
-            on invoice.invoice_id = invoice_details.invoice_id 
-            and invoice.book_id = '".$g_book_id."'
-        inner join
-            restaurant_menu
-            on restaurant_menu.rm_id = invoice_details.rm_id 
-        order by
-            restaurant_menu.rm_name ASC
-    ";
-    $result = $db->query($query);    
-
-    while($row = $result->fetchArray())
+    if($g_sb_id > 0)
     {
-        $arr_data['list_invoice_details'][$row['invoice_id']][$row['rm_id']]['name'] = $row['rm_name'];    
-        $arr_data['list_invoice_details'][$row['invoice_id']][$row['rm_id']]['qty'] = $row['qty'];    
-        $arr_data['list_invoice_details'][$row['invoice_id']][$row['rm_id']]['price'] = $row['price'];
+        $query = "
+            select
+                invoice_details.*,
+                restaurant_menu.rm_name
+            from
+                invoice_details
+            inner join
+                invoice
+                on invoice.invoice_id = invoice_details.invoice_id 
+                and invoice.book_id = '".$g_book_id."'
+            inner join
+                split_bill
+                on split_bill.invoice_id = invoice.invoice_id
+                and split_bill.sb_id = '".$g_sb_id."' 
+            inner join
+                restaurant_menu
+                on restaurant_menu.rm_id = invoice_details.rm_id 
+            order by
+                restaurant_menu.rm_name ASC
+        ";
+        $result = $db->query($query);    
 
-        $arr_data['list_invoice_only'][$row['invoice_id']]['item_amount'] += $row['qty']*$row['price'];    
+        while($row = $result->fetchArray())
+        {
+            $arr_data['list_invoice_details'][$row['invoice_id']][$row['rm_id']]['name'] = $row['rm_name'];    
+            $arr_data['list_invoice_details'][$row['invoice_id']][$row['rm_id']]['qty'] = $row['qty'];    
+            $arr_data['list_invoice_details'][$row['invoice_id']][$row['rm_id']]['price'] = $row['price'];
+
+            $arr_data['list_invoice_only'][$row['invoice_id']]['item_amount'] += $row['qty']*$row['price'];    
+        }    
     }
+        
     
     if($g_sb_id > 0)
     {
@@ -2091,7 +2182,7 @@ elseif($page == 'split_bill_add_edit')
                     
                     <hr>
                     <label>Invoice</label>
-                    <select id="invoice_id" name="invoice_id">
+                    <select id="invoice_id" name="invoice_id" onchange="getData({page:'getDetailsRestaurantMenuBySBID',split_bill_id: this.value,targetSelect:document.getElementsByClassName('panel__menu')})">
                         <option value="0">-</option>
                         <?php
                         if(count($arr_data['list_invoice']) > 0)
@@ -2101,48 +2192,8 @@ elseif($page == 'split_bill_add_edit')
                                 echo '<optgroup label="'.date('d-m-Y',$invoice_date).'">';
                                 foreach($arr_data['list_invoice'][$invoice_date] as $invoice_id => $val)
                                 {
-                                    $list_menu = '';
-                                    
-                                    foreach($arr_data['list_invoice_details'][$invoice_id] as $rm_id => $value)
-                                    {
-                                        $list_menu .= '<tr>';
-                                        $list_menu .= '<td>'.$value['name'].'</td>';
-                                        $list_menu .= '<td align=right>'.parsenumber($value['qty']).'<br><input size=1 id=inputsub__##__qty type=text value=1><button type=button onclick=panel_menu_qty(##,'.($value['price']).');>PER</button></td>';
-                                        $list_menu .= '<td align=right>'.parsenumber($value['price']).'<br><button type=button onclick=panel_menu(##,'.($value['price']).');>Once</button></td>';
-                                        $list_menu .= '<td align=center>'.parsenumber($value['qty']*$value['price'],2).'<br><button type=button onclick=panel_menu(##,'.($value['qty']*$value['price']).');>ALL</button></td>';
-                                        $list_menu .= '</tr>';     
-                                    }
-                                    
-                                    if($list_menu != '')
-                                    {
-                                        $list_menu = '<table><tr><th>Product</th><th>Qty</th><th>Price</th><th>Total</th></tr>'.$list_menu.'</table>';
-                                    }
-                                    
-                                    $js = '
-                                        document.getElementById(\'inv__item\').innerHTML = \''.parsenumber($val['total']).'\';
-                                        document.getElementById(\'inv__item_hid\').value = \''.$val['total'].'\';
-                                        document.getElementById(\'inv__tax\').innerHTML = \''.parsenumber($val['tax_amount']).'\';
-                                        document.getElementById(\'inv__tax_hid\').value = \''.$val['tax_amount'].'\';
-                                        document.getElementById(\'inv__discount\').innerHTML = \''.parsenumber($val['discount_amount']).'\';
-                                        document.getElementById(\'inv__discount_hid\').value = \''.$val['discount_amount'].'\';
-                                        document.getElementById(\'inv__delivery\').innerHTML = \''.parsenumber($val['delivery_amount']).'\';
-                                        document.getElementById(\'inv__delivery_hid\').value = \''.$val['delivery_amount'].'\';
-                                        document.getElementById(\'inv__other\').innerHTML = \''.parsenumber($val['other_amount']).'\';
-                                        document.getElementById(\'inv__other_hid\').value = \''.$val['other_amount'].'\';
-                                        document.getElementById(\'inv__total\').innerHTML = \''.parsenumber($val['total']+$val['tax_amount']-$val['discount_amount']+$val['delivery_amount']+$val['other_amount']).'\';
-                                        document.getElementById(\'inv__total_hid\').value = \''.($val['total']+$val['tax_amount']-$val['discount_amount']+$val['delivery_amount']+$val['other_amount']).'\';
-                                        document.getElementById(\'sb_date\').value = \''.date('Y-m-d',$invoice_date).'\';
-                                        
-                                        let dl = document.getElementsByClassName(\'panel__menu\');
-                                        for(let x = 0; x < dl.length; x++)
-                                        {
-                                            let id = dl[x].id;
-                                            let id_split = id.split(\'__\')
-                                            dl[x].innerHTML = (\''.$list_menu.'\').replaceAll(\'##\',id_split[1]);
-                                        }
-                                    ';
                                 ?>
-                                    <option onclick="<?=$js?>" value="<?=$invoice_id?>"<?=isset($arr_data['list_sb_header']) && $arr_data['list_sb_header']['invoice_id'] == $invoice_id ? ' selected' : ''?>><?=$val['title'].' - '.$val['restaurant_name']?></option>
+                                    <option value="<?=$invoice_id?>"<?=isset($arr_data['list_sb_header']) && $arr_data['list_sb_header']['invoice_id'] == $invoice_id ? ' selected' : ''?>><?=$val['title'].' - '.$val['restaurant_name']?></option>
                                 <?php
                                 } 
                                 echo '</optgroup>';   
@@ -2492,6 +2543,91 @@ elseif($page == 'split_bill_add_edit')
                 document.getElementById('info__tot__adjustment_hid').value = sub_tot_user_adjustment;
                 document.getElementById('info__tot__total').innerHTML = formatNumber(sub_tot_user_total,2); 
                 document.getElementById('info__tot__total_hid').value = sub_tot_user_total;
+            }
+            
+            function createRequestObject()
+            {
+                var ro;
+                var browser = navigator.appName;
+                if(browser == 'Microsoft Internet Explorer'){
+                    ro = new ActiveXObject('Microsoft.XMLHTTP');
+                }else{
+                    ro = new XMLHttpRequest();
+                }
+                return ro;
+            }
+            
+            var xmlhttp = createRequestObject();
+            var url = '<?=APP_URL?>';
+            
+            function getData(setting)
+            {
+                let mess = '';
+                if(setting.page == undefined)
+                {
+                    mess += "Page Invalid\n";         
+                }    
+                else
+                {
+                    if(setting.page == 'getDetailsRestaurantMenuBySBID')
+                    {
+                        xmlhttp.open('get', url+'?page='+setting.page+'&split_bill_id='+setting.split_bill_id, true);
+                        xmlhttp.onreadystatechange = function()
+                        {
+                            if((xmlhttp.readyState == 4) && (xmlhttp.status == 200))
+                            {
+                                let res = JSON.parse(xmlhttp.responseText);
+                                let resmu = '';
+                                
+                                //setting.targetSelect[0].innerHTML = '<option value="0">-</option>';
+                                
+                                if(res.status == 'ok')
+                                {
+                                    if(res.data.length > 0)
+                                    {
+                                        for(let x = 0; x < res.data.length; x++)
+                                        {
+                                            resmu += '<tr>';    
+                                            resmu += '<td>'+res.data[x].name+'</td>';    
+                                            resmu += '<td align="right">'+formatNumber(res.data[x].qty,2)+'<br><input size="1" id="inputsub__##__qty" type="text" value="1"><button type="button" onclick="panel_menu_qty(##,\''+(res.data[x].price)+'\')">PER</button></td>';    
+                                            resmu += '<td align="right">'+formatNumber(res.data[x].price,2)+'<br><button type="button" onclick="panel_menu(##,\''+res.data[x].price+'\')">Once</button></td>';    
+                                            resmu += '<td align="center">'+formatNumber(res.data[x].total,2)+'<br><button type="button" onclick="panel_menu(##,\''+res.data[x].total+'\');">ALL</button></td>';    
+                                            resmu += '</tr>';    
+                                        }
+                                    }
+                                    
+                                    if(resmu != '')
+                                    {
+                                        resmu = '<table><tr><th>Product</th><th>Qty</th><th>Price</th><th>Total</th></tr>'+resmu+'</table>';
+                                    }
+                                    
+                                    for(let x = 0; x < setting.targetSelect.length; x++)
+                                    {
+                                        let id_target = setting.targetSelect[x].id; //input__<?=$x?>__items_amount_panel
+                                        let exp_id_target = id_target.split('__');
+                                        setting.targetSelect[x].innerHTML = resmu.replaceAll('##',exp_id_target[1]);    
+                                    }    
+                                }
+                                else
+                                {
+                                    mess += "ERROR: "+res.status_mess+"\n";    
+                                }
+                                  
+                            }
+                            return false;
+                        }
+                        xmlhttp.send(null);     
+                    }
+                    else
+                    {
+                        mess += "Page Invalid - Not Defined\n";    
+                    }   
+                }
+                
+                if(mess != '')
+                {
+                    console.log(mess);
+                }
             }
         </script>
     </div>

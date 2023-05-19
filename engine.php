@@ -1571,6 +1571,61 @@ elseif($_SERVER['REQUEST_METHOD'] === 'GET')
             header('Content-type: application/json');
             echo json_encode($res);
             die();         
+        }
+        elseif($page == 'getDetailsRestaurantMenuBySBID')
+        {
+            $split_bill_id = isset($_GET['split_bill_id']) ? $_GET['split_bill_id'] : 0;
+            $res = array();
+            if($split_bill_id == 0)
+            {
+                $res['status'] = 'error';        
+                $res['status_mess'] = 'SB ID Invalid / Empty';        
+            }
+            else
+            {
+                $arr_data['list_invoice_details'] = array();
+                
+                $query = "
+                    select
+                        invoice_details.*,
+                        restaurant_menu.rm_name
+                    from
+                        invoice_details
+                    inner join
+                        invoice
+                        on invoice.invoice_id = invoice_details.invoice_id 
+                    inner join
+                        split_bill
+                        on split_bill.invoice_id = invoice.invoice_id
+                        and split_bill.sb_id = '".$split_bill_id."' 
+                    inner join
+                        restaurant_menu
+                        on restaurant_menu.rm_id = invoice_details.rm_id 
+                    order by
+                        restaurant_menu.rm_name ASC
+                ";
+                $result = $db->query($query);    
+
+                while($row = $result->fetchArray())
+                {
+                    $res['data'][] = array(
+                        'id' => $row['id_id'],    
+                        'name' => $row['rm_name'],    
+                        'qty' => $row['qty'],    
+                        'price' => $row['price'],    
+                        'total' => $row['qty']*$row['price'],   
+                    );                
+                }    
+                
+                $res['status'] = 'ok';        
+                $res['status_mess'] = '';
+                
+                   
+            }
+            
+            header('Content-type: application/json');
+            echo json_encode($res);
+            die();    
         }    
     }    
 }
