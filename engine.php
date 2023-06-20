@@ -90,14 +90,16 @@ if($_SERVER['REQUEST_METHOD'] === 'POST')
                                 book_id,
                                 book_title,
                                 user_id,
-                                created_at
+                                created_at,
+                                status_id
                             )
                         values
                             (
                                 '".$final_book_id."',
                                 '".$title."',
                                 '".$ses['user_id']."',
-                                '".time()."'
+                                '".time()."',
+                                '1'
                             )
                     ";
                 }
