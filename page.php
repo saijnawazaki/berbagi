@@ -4477,7 +4477,101 @@ elseif($page == 'personal_report')
     $today -= ($g_backstep*86400)*7;
     
     $from_date_week = $today;
-    $to_date_week = $from_date_week+(86400*6); 
+    $to_date_week = $from_date_week+(86400*6);
+    
+    //Saldo Awal
+    {
+        $query = "
+            select
+                SUM(total_sb - total_debit + total_kredit) as total
+            from
+            (
+                select
+                    sum
+                    (
+                        split_bill_details.item_amount
+                        +
+                        split_bill_details.tax_amount
+                        -
+                        split_bill_details.discount_amount
+                        +
+                        split_bill_details.delivery_amount
+                        +
+                        split_bill_details.other_amount
+                        +
+                        split_bill_details.adjustment_amount
+                    ) as total_sb,
+                    0 as total_debit,
+                    0 as total_kredit
+                from
+                    split_bill_details
+                inner join
+                    split_bill
+                    on split_bill.sb_id = split_bill_details.sb_id
+                inner join
+                    invoice
+                    on invoice.invoice_id = split_bill.invoice_id
+                inner join
+                    book
+                    on book.book_id = invoice.book_id
+                    and book.user_id = '".$db_mgr_person_id."'
+                inner join
+                    person
+                    on person.person_id = split_bill_details.person_id
+                    and person.person_id = '".$db_person_id."'
+                where
+                    split_bill.sb_date < '".$from_date_week."'
+                
+                UNION
+                
+                select
+                    0 as total_sb,
+                    sum(payment.amount) as total_debit,
+                    0 as total_kredit
+                from
+                    payment
+                inner join
+                    person
+                    on person.person_id = payment.person_id
+                    and person.person_id = '".$db_person_id."'
+                inner join
+                    book
+                    on book.book_id = payment.book_id
+                    and book.user_id = '".$db_mgr_person_id."'
+                where
+                    payment.payment_date < '".$from_date_week."'
+                    and payment.payment_type_id = 1
+                
+                UNION
+                
+                select
+                    0 as total_db,
+                    0 as total_debit,
+                    sum(payment.amount) as total_kredit
+                from
+                    payment
+                inner join
+                    person
+                    on person.person_id = payment.person_id
+                    and person.person_id = '".$db_person_id."'
+                inner join
+                    book
+                    on book.book_id = payment.book_id
+                    and book.user_id = '".$db_mgr_person_id."'
+                where
+                    payment.payment_date < '".$from_date_week."'
+                    and payment.payment_type_id = 2
+            ) as res 
+            
+        ";
+        //echo "<pre>$query</pre>";
+        $result = $db->query($query) or die('QWUIEHUQWEHIUQWHEUHQWEQWE');
+        $row = $result->fetchArray();
+        
+        $beg_balance = (float) $row['total'];
+        //echo "|$beg_balance|<br>";
+    }
+         
     
       
     //Load Split BIll
@@ -4620,6 +4714,48 @@ elseif($page == 'personal_report')
     {
         $arr_data['book'][$row['book_id']]['name'] = $row['book_title'];
         $arr_data['data'][$row['payment_date']][$row['book_id']]['payment'][$row['payment_type_id']]['amount'] = $row['amount'];    
+        $arr_data['data'][$row['payment_date']][$row['book_id']]['payment_remarks'] = '';    
+    }
+    
+    //Remarks Only
+    //Load Payment
+    $query = "
+        select
+            book.book_id,
+            book.book_title,
+            payment.payment_id,
+            payment.payment_date,
+            payment.payment_type_id,
+            payment.remarks
+        from
+            payment
+        inner join
+            person
+            on person.person_id = payment.person_id
+            and person.person_id = '".$db_person_id."'
+        inner join
+            book
+            on book.book_id = payment.book_id
+            and book.user_id = '".$db_mgr_person_id."'
+        where
+            payment.payment_date between '".$from_date_week."' AND '".$to_date_week."'
+        group by
+            book.book_id,
+            book.book_title,
+            payment.payment_id,
+            payment.payment_date,
+            payment.payment_type_id,
+            payment.remarks 
+    ";
+    //echo $query; 
+    //$result = null;
+    //$row = null;
+    $result = $db->query($query) or die('error2');
+    while($row = $result->fetchArray())
+    {
+        $arr_data['book'][$row['book_id']]['name'] = $row['book_title'];
+        
+        $arr_data['data'][$row['payment_date']][$row['book_id']]['payment_remarks'] .= ($row['payment_type_id'] == 1 ? '[DB]' : '[CR]').' - '.$row['remarks'].'<br>';    
     }
     
     //total
@@ -4810,7 +4946,7 @@ elseif($page == 'personal_report')
                             <img src="<?=APP_URL?>/assets/kirbo_184x184.jpg" class="br-round border-2 bc-muted img-fluid">
                         </div>
                         <div class="col-8">
-                            Puyo, <?=$db_person_name.' ('.$g_initial.')'?>
+                            <h3>Puyo,<br><?=$db_person_name.' ['.$g_initial.']'?></h3>
                         </div> 
                     </div>
                 </div>
@@ -4877,9 +5013,12 @@ elseif($page == 'personal_report')
                         </div>
                     </div>
                     <div class="col-6 col-sm-3">
-                        <div class="br-3 p-3 mt-3" style="background-color: #faf6bf;">
-                            <b>Percentage</b>      
-                            <h4 class="text-right"><br><?=($total_payment > 0 && $total_total > 0 ? parsenumber($total_payment/$total_total*100,1) : 0)?> %</h4>
+                        <div class="br-3 p-3 mt-3" style="background-color: #e0db92; position: relative;">
+                            <div style="z-index:0;background-color: #9fe092; position: absolute; top:0; left: 0; height: 100%; width: <?=($total_payment > 0 && $total_total > 0 ? parsenumber($total_payment/$total_total*100,1) : 0)?>%;" class="br-3">&nbsp;</div>
+                            <div style="z-index:1; position: relative;">
+                                <b>Percentage</b>      
+                                <h4 class="text-right"><br><?=($total_payment > 0 && $total_total > 0 ? parsenumber($total_payment/$total_total*100,1) : 0)?> %</h4>
+                            </div>
                         </div>
                     </div>   
                 </div>
@@ -4897,7 +5036,9 @@ elseif($page == 'personal_report')
                                     <th>Item</th>
                                     <th>Debit</th>
                                     <th>Kredit</th>
+                                    <th>Remarks</th>
                                     <th>Total</th>
+                                    <th>End Balance</th>
                                 </tr>
                                 <?php
                                     $tot_item = 0;
@@ -4906,6 +5047,7 @@ elseif($page == 'personal_report')
                                     $tot_debit = 0;
                                     $tot_kredit = 0;
                                     $tot_total_total = 0;
+                                    $tot_end_balance = $beg_balance;
                                     if(count($arr_data['data']) == 0)
                                     {
                                     ?>
@@ -4939,6 +5081,8 @@ elseif($page == 'personal_report')
                                                 $total_remaining += $total_sb;
                                                 $total_remaining -= isset($arr_data['data'][$date][$book_id]['payment'][1]['amount']) ? $arr_data['data'][$date][$book_id]['payment'][1]['amount'] : 0;
                                                 $total_remaining += isset($arr_data['data'][$date][$book_id]['payment'][2]['amount']) ? $arr_data['data'][$date][$book_id]['payment'][2]['amount'] : 0; 
+                                                
+                                                $tot_end_balance += $total_remaining; 
                                                 
                                                 $tot_item += isset($arr_data['data'][$date][$book_id]['split_bill']['item_amount']) ? $arr_data['data'][$date][$book_id]['split_bill']['item_amount'] : 0;
                                                 $tot_others += $total_others;
@@ -5015,29 +5159,32 @@ elseif($page == 'personal_report')
                                                                     <th>Total</th>
                                                                 </tr>
                                                                 <?php
-                                                                
-                                                                foreach($arr_data['data_det'][$date][$book_id] as $restaurant_id => $val)
+                                                                if(isset($arr_data['data_det'][$date][$book_id]))
                                                                 {
-                                                                    $det_item = $val['item_amount'];
-                                                                    $det_tax = $val['tax_amount'];
-                                                                    $det_disc = $val['discount_amount'];
-                                                                    $det_del = $val['delivery_amount'];
-                                                                    $det_other = $val['other_amount'];
-                                                                    $det_adj = $val['adjustment_amount'];
-                                                                    $det_sb = $det_item+$det_tax-$det_disc+$det_del+$det_other+$det_adj;
-                                                                    ?>
-                                                                    <tr>
-                                                                        <td><?=$arr_data['restaurant'][$restaurant_id]['name'].' :: '.$restaurant_id?></td>
-                                                                        <td><?=parsenumber($det_item,2)?></td>
-                                                                        <td><?=parsenumber($det_tax,2)?></td>
-                                                                        <td><?=parsenumber($det_disc,2)?></td>
-                                                                        <td><?=parsenumber($det_del,2)?></td>
-                                                                        <td><?=parsenumber($det_other,2)?></td>
-                                                                        <td><?=parsenumber($det_adj,2)?></td>
-                                                                        <td><?=parsenumber($det_sb,2)?></td>
-                                                                    </tr>
-                                                                    <?php
+                                                                    foreach($arr_data['data_det'][$date][$book_id] as $restaurant_id => $val)
+                                                                    {
+                                                                        $det_item = $val['item_amount'];
+                                                                        $det_tax = $val['tax_amount'];
+                                                                        $det_disc = $val['discount_amount'];
+                                                                        $det_del = $val['delivery_amount'];
+                                                                        $det_other = $val['other_amount'];
+                                                                        $det_adj = $val['adjustment_amount'];
+                                                                        $det_sb = $det_item+$det_tax-$det_disc+$det_del+$det_other+$det_adj;
+                                                                        ?>
+                                                                        <tr>
+                                                                            <td><?=$arr_data['restaurant'][$restaurant_id]['name'].' :: '.$restaurant_id?></td>
+                                                                            <td><?=parsenumber($det_item,2)?></td>
+                                                                            <td><?=parsenumber($det_tax,2)?></td>
+                                                                            <td><?=parsenumber($det_disc,2)?></td>
+                                                                            <td><?=parsenumber($det_del,2)?></td>
+                                                                            <td><?=parsenumber($det_other,2)?></td>
+                                                                            <td><?=parsenumber($det_adj,2)?></td>
+                                                                            <td><?=parsenumber($det_sb,2)?></td>
+                                                                        </tr>
+                                                                        <?php
+                                                                    }    
                                                                 }
+                                                                    
                                                               ?>
                                                               </table>
                                                               </div>    
@@ -5048,7 +5195,9 @@ elseif($page == 'personal_report')
                                                     </td>
                                                     <td class="text-right"><?=isset($arr_data['data'][$date][$book_id]['payment'][1]['amount']) ? '<span class="color-success">-'.parsenumber($arr_data['data'][$date][$book_id]['payment'][1]['amount'],2).'</span>' : ''?></td>
                                                     <td class="text-right"><?=isset($arr_data['data'][$date][$book_id]['payment'][2]['amount']) ? '<span class="color-danger">+'.parsenumber($arr_data['data'][$date][$book_id]['payment'][2]['amount'],2).'</span>' : ''?></td>
+                                                    <td><?=isset($arr_data['data'][$date][$book_id]['payment_remarks']) ? $arr_data['data'][$date][$book_id]['payment_remarks'] : ''?></td>
                                                     <td class="text-right"><?=parsenumber($total_remaining,2)?></td>
+                                                    <td class="text-right"><?=parsenumber($tot_end_balance,2)?></td>
                                                 </tr>
                                             <?php
                                                 $show_date = '';    
@@ -5062,7 +5211,9 @@ elseif($page == 'personal_report')
                                     <td class="text-right"><?=parsenumber($tot_total,2)?></td>
                                     <td class="text-right"><?=parsenumber($tot_debit,2)?></td>
                                     <td class="text-right"><?=parsenumber($tot_kredit,2)?></td>
+                                    <td>&nbsp;</td>
                                     <td class="text-right"><?=parsenumber($tot_total_total,2)?></td>
+                                    <td class="text-right"><?=parsenumber($tot_end_balance,2)?></td>
                                 </tr>
                             </table>
                         </div>
