@@ -18,7 +18,7 @@ elseif($page == 'login')
                 <div class="col-12 col-lg-3">
                     <div class="border-1 bc-muted p-2 br-2 mt-2">
                         <label>Username</label>
-                        <input type="text" name="username" value="" autofocus="">
+                        <input type="text" name="username" value="<?=(isset($_POST['username']) ? $_POST['username'] : '')?>" autofocus="">
                         <label>Password</label>
                         <input type="password" name="password" value="">
                         <hr>
