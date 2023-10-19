@@ -1430,6 +1430,74 @@ if($_SERVER['REQUEST_METHOD'] === 'POST')
                     
         }    
     }
+    elseif($page == 'payment_add_bulk')
+    {
+        if(isset($_POST['submit']))
+        {
+            $book_id = (int) $_POST['book_id'];    
+            $payment_date = parsedate($_POST['payment_date']);    
+            $payment_type_id = (int) $_POST['payment_type_id'];    
+            $amount = $_POST['amount'];    
+            $remarks = $_POST['remarks'];    
+            $person_id = $_POST['person_id'];
+            $_SESSION['mess'] = '';
+            
+            if($_SESSION['mess'] == '')
+            {
+                foreach($person_id as $index => $person_id_id)
+                {
+                    if($person_id_id > 0 && $amount[$index] > 0)
+                    {
+                        //New
+                        $query = "select max(payment_id) as last_id from payment";
+                        $result = $db->query($query);
+                        $data = $result->fetchArray();
+                        $final_id = ((int) $data['last_id'])+1;
+                        
+                        $query = "
+                            insert into
+                                payment
+                                (
+                                    payment_id,
+                                    book_id,
+                                    payment_date,
+                                    payment_type_id,
+                                    person_id,
+                                    amount,
+                                    remarks,
+                                    status_id,
+                                    created_by,
+                                    created_at
+                                )
+                            values
+                                (
+                                    '".$final_id."',
+                                    '".$book_id."',
+                                    '".$payment_date."',
+                                    '".$payment_type_id."',
+                                    '".$person_id[$index]."',
+                                    '".$amount[$index]."',
+                                    '".$remarks[$index]."',
+                                    '1',
+                                    '".$ses['user_id']."',
+                                    '".time()."'
+                                )
+                        ";
+                        $db->query($query);        
+                    }
+                }
+               
+                
+                //echo $query;
+                //print_r($_POST);
+                //die();
+                
+                $_SESSION['mess'] .= 'Add Successfully';
+                header('location: '.APP_URL.'?page=payment&&book_id='.$book_id);    
+            }
+                    
+        }    
+    }
     elseif($page == 'payment_delete')
     {
         if(isset($_POST['submit']))

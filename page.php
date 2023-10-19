@@ -112,9 +112,13 @@ elseif($page == 'book')
                 <svg id="i-chevron-left" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentcolor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2">
                     <path d="M20 30 L8 16 20 2" />
                 </svg>
-            
-                Book
+                Home
+                
             </a>
+            <svg id="i-chevron-right" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentcolor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2">
+                <path d="M12 30 L24 16 12 2" />
+            </svg>
+            Book
         </h1>
         <div class="text-right">
             <a href="<?=APP_URL.'?page=book_add_edit&book_id=0'?>" class="button bg-success color-white">New</a>
@@ -1265,9 +1269,13 @@ elseif($page == 'restaurant')
                 <svg id="i-chevron-left" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentcolor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2">
                     <path d="M20 30 L8 16 20 2" />
                 </svg>
-            
-                Restaurant
+                Home
+                
             </a>
+            <svg id="i-chevron-right" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentcolor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2">
+                <path d="M12 30 L24 16 12 2" />
+            </svg>
+            Restaurant
         </h1>
         <div class="text-right">
             <a href="<?=APP_URL.'?page=restaurant_add_edit&restaurant_id=0'?>" class="button bg-success color-white">New</a>
@@ -1648,9 +1656,13 @@ elseif($page == 'person')
                 <svg id="i-chevron-left" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentcolor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2">
                     <path d="M20 30 L8 16 20 2" />
                 </svg>
-            
-                Person
+                Home
+                
             </a>
+            <svg id="i-chevron-right" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentcolor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2">
+                <path d="M12 30 L24 16 12 2" />
+            </svg>
+            Person
         </h1>
         <div class="text-right">
             <a href="<?=APP_URL.'?page=person_add_edit&person_id=0'?>" class="button bg-success color-white">New</a>
@@ -2345,7 +2357,50 @@ elseif($page == 'split_bill_add_edit')
                                     <input class="data__loop" type="hidden" name="sb_list[<?=$x?>][items]" id="input__<?=$x?>__items_amount" value="<?=isset($arr_data['list_sb_details'][$x]['item_amount']) ? $arr_data['list_sb_details'][$x]['item_amount'] : ''?>">   
                                     <input type="hidden" id="input__<?=$x?>__items_amount_panel_tgg" value="0">
                                     <div id="input__<?=$x?>__items_amount_panel" class="position-absolute bg-light-lighten" style="display:none; z-index: 9000;">
-                                        <div class="panel__menu" id="input__<?=$x?>__items_amount_panel_sub"></div>
+                                        <div class="panel__menu" id="input__<?=$x?>__items_amount_panel_sub">
+                                        <?php
+                                        //$arr_data['list_invoice_details'][$row['invoice_id']][$row['rm_id']]['name']
+                                        if(isset($arr_data['list_sb_header']) && $arr_data['list_sb_header']['invoice_id'])
+                                        {
+                                            if(isset($arr_data['list_invoice_details'][$arr_data['list_sb_header']['invoice_id']]))
+                                            {
+                                                ?>
+                                                <table>
+                                                    <tr>
+                                                        <th>Product</th>
+                                                        <th>Qty</th>
+                                                        <th>Price</th>
+                                                        <th>Total</th>
+                                                    </tr>
+                                                <?php
+                                                foreach($arr_data['list_invoice_details'][$arr_data['list_sb_header']['invoice_id']] as $rm_id => $val)
+                                                {
+                                                ?>
+                                                    <tr>    
+                                                        <td><?=$val['name']?></td>    
+                                                        <td align="right">
+                                                            <?=$val['qty']?>
+                                                            <br><input size="1" id="inputsub__<?=$x?>__qty" type="text" value="<?=$val['qty']?>">
+                                                            <button type="button" onclick="panel_menu_qty(<?=$x?>,'<?=$val['price']?>')">PER</button>
+                                                        </td>    
+                                                        <td align="right">
+                                                            <?=$val['price']?>
+                                                            <br><button type="button" onclick="panel_menu(<?=$x?>,'<?=$val['price']?>')">Once</button>
+                                                        </td>    
+                                                        <td align="center">
+                                                            <?=$val['qty']*$val['price']?>
+                                                            <br><button type="button" onclick="panel_menu(<?=$x?>,'<?=$val['qty']*$val['price']?>')">ALL</button>
+                                                        </td>    
+                                                    </tr>   
+                                                <?php    
+                                                }
+                                                ?>
+                                                </table>
+                                                <?php
+                                            }    
+                                        }
+                                        ?>
+                                        </div>
                                         <select id="input__<?=$x?>__items_amount_calc_mode">
                                             <option value="+">+ ADD</option>
                                             <option value="=">= SET</option>
@@ -2711,9 +2766,13 @@ elseif($page == 'payment')
                 <svg id="i-chevron-left" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentcolor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2">
                     <path d="M20 30 L8 16 20 2" />
                 </svg>
-            
-                Payment
+                <?=isset($data['book_title']) ? $data['book_title'] : ''?>
+                
             </a>
+            <svg id="i-chevron-right" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentcolor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2">
+                <path d="M12 30 L24 16 12 2" />
+            </svg>
+            Payment
         </h1>
         <div class="row">
             <div class="col-12 col-sm-3">
@@ -2736,6 +2795,7 @@ elseif($page == 'payment')
                 <button type="button" class="button bg-primary color-white" onclick="<?=$js?>">Set</button>
             </div>    
             <div class="col-12 col-sm-3 text-right">
+                <a href="<?=APP_URL.'?page=payment_add_bulk&book_id='.$g_book_id?>" class="button bg-primary color-white">Add Bulk</a>
                 <a href="<?=APP_URL.'?page=payment_add_edit&payment_id_id=0&book_id='.$g_book_id?>" class="button bg-success color-white">New</a>
             </div>    
         </div>
@@ -3003,6 +3063,147 @@ elseif($page == 'payment_add_edit')
     </div>
 <?php    
 }
+elseif($page == 'payment_add_bulk')
+{
+    $g_book_id = isset($_GET['book_id']) ? $_GET['book_id'] : 0;
+             
+    if(! preg_match('/^[0-9]*$/', $g_book_id)) 
+    {
+        die('Book ID Invalid');        
+    }
+    
+    if($g_book_id > 0)
+    {
+        $query = "
+            select
+                *
+            from
+                book
+            where
+                book_id = '".$g_book_id."'
+        ";
+        $result = $db->query($query);    
+        $data = $result->fetchArray();
+        
+        if($data['user_id'] != $ses['user_id'])
+        {
+            die('Book not yours!');    
+        }
+    }
+    
+    
+    //load person
+    $query = "
+        select
+            *
+        from
+            person
+        order by
+            person_name ASC
+    ";
+    $result = $db->query($query);
+    $arr_data['list_person'] = array();
+    while($row = $result->fetchArray())
+    {
+        $arr_data['list_person'][$row['person_id']]['name'] = $row['initial_name'].' - '.$row['person_name'];    
+    }
+?>
+    <div class="container">
+        <h1>
+            <a href="<?=APP_URL.'?page=payment&book_id='.$g_book_id?>">
+                <svg id="i-chevron-left" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentcolor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2">
+                    <path d="M20 30 L8 16 20 2" />
+                </svg>
+            Payment
+            </a>
+            <svg id="i-chevron-right" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentcolor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2">
+                <path d="M12 30 L24 16 12 2" />
+            </svg>
+            Add Bulk
+        </h1>
+        <hr>
+        <div class="row">
+            <div class="col-12 col-lg-4">
+                <form method="post" action="<?=APP_URL?>?page=payment_add_edit" accept-charset="utf-8">
+                    <label>Payment Date</label>
+                    <input type="date" name="payment_date" value="<?=date('Y-m-d')?>">
+                    <label>Payment Type</label>
+                    <select name="payment_type_id">
+                        <option value="1">Debit</option>
+                        <option value="2">Kredit</option>
+                    </select>
+                    <label>Person</label>
+                    <table>
+                        <tr>
+                            <th>No</th>
+                            <th>Person</th>
+                            <th>Amount</th>
+                            <th>Remarks</th>
+                        </tr>
+                        <?php
+                        for($x = 1; $x <= 10; $x++)
+                        {
+                        ?>
+                            <tr>
+                                <td><?=$x?></td>
+                                <td>
+                                    <select name="person_id[<?=$x?>]">
+                                        <option value="0">-</option>
+                                        <?php
+                                            foreach($arr_data['list_person'] as $person_id => $value)
+                                            {
+                                            ?>
+                                                <option value="<?=$person_id?>"><?=$value['name']?></option>
+                                        
+                                            <?php    
+                                            }    
+                                        ?>
+                                    </select>
+                                </td>
+                                <td>
+                                    <input type="text" id="amount__<?=$x?>" name="amount[<?=$x?>]" value="" class="list_amount">
+                                    <?php
+                                        $js = '
+                                            var reff = Number(document.getElementById(\'amount__'.$x.'\').value);
+                                            var list_data = document.getElementsByClassName(\'list_amount\');
+                                            for(var x = 0; x < list_data.length; x++)
+                                            {
+                                                list_data[x].value = reff;
+                                            } 
+                                        ';
+                                    ?>
+                                    <button type="button" onclick="<?=$js?>">Set To All</button>
+                                </td>
+                                <td>
+                                    <input type="text" id="remarks__<?=$x?>" name="remarks[<?=$x?>]" value="" class="list_remarks"> 
+                                    <?php
+                                        $js = '
+                                            var reff = Number(document.getElementById(\'remarks__'.$x.'\').value);
+                                            var list_data = document.getElementsByClassName(\'list_remarks\');
+                                            for(var x = 0; x < list_data.length; x++)
+                                            {
+                                                list_data[x].value = reff;
+                                            } 
+                                        ';
+                                    ?>
+                                    <button type="button" onclick="<?=$js?>">Set To All</button>
+                                </td> 
+                            </tr>
+                        <?php
+                        }
+                        ?>
+                    </table>
+                        
+                    <hr>
+                    <input type="hidden" name="book_id" value="<?=$g_book_id?>">
+                    <input type="submit" name="submit" class="bg-primary color-white" value="Submit">
+                </form>   
+            </div>
+            
+        </div>
+    </div>
+<?php    
+}
 elseif($page == 'summary')
 {
     $g_book_id = isset($_GET['book_id']) ? $_GET['book_id'] : 0;
@@ -3079,8 +3280,12 @@ elseif($page == 'summary')
             <svg id="i-chevron-left" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentcolor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2">
                 <path d="M20 30 L8 16 20 2" />
             </svg>
-        Summary
+            <?=$g_book_id > 0 ? (isset($data['book_title']) ? $data['book_title'] : '') : 'Home'?>
         </a>
+        <svg id="i-chevron-right" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentcolor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2">
+            <path d="M12 30 L24 16 12 2" />
+        </svg>
+        Summary
     </h1>
     <form method="get" action="<?=APP_URL?>" accept-charset="utf-8">
         <?php
