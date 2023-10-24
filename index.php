@@ -56,7 +56,11 @@ else
     }    
 }
     
-//Connect SQLite
-$db = new SQLite3(DB_PATH) or die('Error Connect DB');
+require 'Databasu.php';
+
+$db = new Databasu();
+
+print_r($db);
+
 //print_r($_SESSION);
 require 'base.php';

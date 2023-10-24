@@ -1,1 +1,2 @@
 RewriteRule .*\.(db)$ - [F]
+RewriteRule .*\.(sql)$ - [F] 
