@@ -36,11 +36,11 @@ class Databasu
     {
         if(DB_CONNECTOR == 'sqlite')
         {
-            return $result->fetchArray($query);     
+            return $result->fetchArray();     
         }
         else
         {
-            return $result->fetch_array($query);
+            return $result->fetch_array();
         }
                 
     }   

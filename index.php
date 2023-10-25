@@ -60,7 +60,7 @@ require 'Databasu.php';
 
 $db = new Databasu();
 
-print_r($db);
+//print_r($db);
 
 //print_r($_SESSION);
 require 'base.php';

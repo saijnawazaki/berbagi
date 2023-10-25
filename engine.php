@@ -20,7 +20,7 @@ if($_SERVER['REQUEST_METHOD'] === 'POST')
             {
                 $query = "select user.*,person.initial_name from user inner join person on person.person_id = user.person_id where username = '".$username."'";
                 $result = $db->query($query);
-                $data = $result->fetchArray();
+                $data = $db->fetchArray($result);
                 
                 if(! $data)
                 {
@@ -80,7 +80,7 @@ if($_SERVER['REQUEST_METHOD'] === 'POST')
                     //New
                     $query = "select max(book_id) as last_id from book";
                     $result = $db->query($query);
-                    $data = $result->fetchArray();
+                    $data = $db->fetchArray($result);
                     $final_book_id = ((int) $data['last_id'])+1;
                     
                     $query = "
@@ -259,7 +259,7 @@ if($_SERVER['REQUEST_METHOD'] === 'POST')
                     //New
                     $query = "select max(restaurant_id) as last_id from restaurant";
                     $result = $db->query($query);
-                    $data = $result->fetchArray();
+                    $data = $db->fetchArray($result);
                     $final_restaurant_id = ((int) $data['last_id'])+1;
                     
                     $query = "
@@ -404,7 +404,7 @@ if($_SERVER['REQUEST_METHOD'] === 'POST')
                     //New
                     $query = "select max(rm_id) as last_id from restaurant_menu";
                     $result = $db->query($query);
-                    $data = $result->fetchArray();
+                    $data = $db->fetchArray($result);
                     $final_id = ((int) $data['last_id'])+1;
                     
                     $query = "
@@ -481,13 +481,13 @@ if($_SERVER['REQUEST_METHOD'] === 'POST')
                                         tag_name = '".$tag."'
                                 ";
                                 $result = $db->query($query);
-                                $data = $result->fetchArray();
+                                $data = $db->fetchArray($result);
                                 
                                 if((int) $data['tag_id'] == 0)
                                 {
                                     $query = "select max(tag_id) as last_id from tag";
                                     $result = $db->query($query);
-                                    $data = $result->fetchArray();
+                                    $data = $db->fetchArray($result);
                                     $final_tag_id = ((int) $data['last_id'])+1;
                                     
                                     $query = "
@@ -678,7 +678,7 @@ if($_SERVER['REQUEST_METHOD'] === 'POST')
                     //New
                     $query = "select max(person_id) as last_id from person";
                     $result = $db->query($query);
-                    $data = $result->fetchArray();
+                    $data = $db->fetchArray($result);
                     $final_id = ((int) $data['last_id'])+1;
                     
                     $query = "
@@ -785,7 +785,7 @@ if($_SERVER['REQUEST_METHOD'] === 'POST')
                 {
                     $query = "select max(invoice_id) as last_id from invoice";
                     $result = $db->query($query);
-                    $data = $result->fetchArray();
+                    $data = $db->fetchArray($result);
                     $v_invoice_id = ((int) $data['last_id'])+1;
                     
                     $query = "
@@ -865,7 +865,7 @@ if($_SERVER['REQUEST_METHOD'] === 'POST')
                     {
                         $query = "select max(id_id) as last_id from invoice_details";
                         $result = $db->query($query);
-                        $data = $result->fetchArray();
+                        $data = $db->fetchArray($result);
                         $id_id = ((int) $data['last_id'])+1;
 
                         $query = "
@@ -933,7 +933,7 @@ if($_SERVER['REQUEST_METHOD'] === 'POST')
             {
                 $query = "select max(invoice_id) as last_id from invoice";
                 $result = $db->query($query);
-                $data = $result->fetchArray();
+                $data = $db->fetchArray($result);
                 $v_invoice_id_new = ((int) $data['last_id'])+1;
                 
                 //header
@@ -988,7 +988,7 @@ if($_SERVER['REQUEST_METHOD'] === 'POST')
                 ";
                 $result = $db->query($query);
                 $arr_data['list'] = array();
-                while($row = $result->fetchArray())
+                while($row = $db->fetchArray($result))
                 {
                     $arr_data['list'][$row['id_id']]['product_id'] = $row['rm_id'];    
                     $arr_data['list'][$row['id_id']]['qty'] = $row['qty'];    
@@ -1001,7 +1001,7 @@ if($_SERVER['REQUEST_METHOD'] === 'POST')
                     {
                         $query = "select max(id_id) as last_id from invoice_details";
                         $result = $db->query($query);
-                        $data = $result->fetchArray();
+                        $data = $db->fetchArray($result);
                         $id_id = ((int) $data['last_id'])+1;
 
                         $query = "
@@ -1039,7 +1039,7 @@ if($_SERVER['REQUEST_METHOD'] === 'POST')
                     //cek dulu SB ada berapa
                     $query = "select count(*) as jumlah from split_bill where invoice_id = '".$v_invoice_id."'";
                     $result = $db->query($query);
-                    $data = $result->fetchArray();
+                    $data = $db->fetchArray($result);
                     $jumlah = (int) $data['jumlah'];
                     
                     if($jumlah != 1)
@@ -1050,13 +1050,13 @@ if($_SERVER['REQUEST_METHOD'] === 'POST')
                     {
                         $query = "select sb_id from split_bill where invoice_id = '".$v_invoice_id."'";
                         $result = $db->query($query);
-                        $data = $result->fetchArray();
+                        $data = $db->fetchArray($result);
                         $v_sb_id = (int) $data['sb_id'];
                         
                         //header
                         $query = "select max(sb_id) as last_id from split_bill";
                         $result = $db->query($query);
-                        $data = $result->fetchArray();
+                        $data = $db->fetchArray($result);
                         $v_sb_id_new = ((int) $data['last_id'])+1;
                         
                         $query = "
@@ -1095,7 +1095,7 @@ if($_SERVER['REQUEST_METHOD'] === 'POST')
                         ";
                         $result = $db->query($query);
                         $arr_data['list'] = array();
-                        while($row = $result->fetchArray())
+                        while($row = $db->fetchArray($result))
                         {
                             $arr_data['list'][$row['sbd_id']]['person_id'] = $row['person_id'];    
                             $arr_data['list'][$row['sbd_id']]['items'] = $row['item_amount'];    
@@ -1113,7 +1113,7 @@ if($_SERVER['REQUEST_METHOD'] === 'POST')
                             {
                                 $query = "select max(sbd_id) as last_id from split_bill_details";
                                 $result = $db->query($query);
-                                $data = $result->fetchArray();
+                                $data = $db->fetchArray($result);
                                 $sbd_id = ((int) $data['last_id'])+1;
 
                                 $query = "
@@ -1171,7 +1171,7 @@ if($_SERVER['REQUEST_METHOD'] === 'POST')
             {
                 $query = "select book_id from invoice where invoice_id = '".$v_invoice_id."'";
                 $result = $db->query($query);
-                $data = $result->fetchArray();
+                $data = $db->fetchArray($result);
                 $db_book_id = (int) $data['book_id'];
             ?>
                 <script>
@@ -1212,7 +1212,7 @@ if($_SERVER['REQUEST_METHOD'] === 'POST')
                 {
                     $query = "select max(sb_id) as last_id from split_bill";
                     $result = $db->query($query);
-                    $data = $result->fetchArray();
+                    $data = $db->fetchArray($result);
                     $v_sb_id = ((int) $data['last_id'])+1;
                     
                     $query = "
@@ -1272,7 +1272,7 @@ if($_SERVER['REQUEST_METHOD'] === 'POST')
                     {
                         $query = "select max(sbd_id) as last_id from split_bill_details";
                         $result = $db->query($query);
-                        $data = $result->fetchArray();
+                        $data = $db->fetchArray($result);
                         $sbd_id = ((int) $data['last_id'])+1;
 
                         $query = "
@@ -1354,7 +1354,7 @@ if($_SERVER['REQUEST_METHOD'] === 'POST')
                     //New
                     $query = "select max(payment_id) as last_id from payment";
                     $result = $db->query($query);
-                    $data = $result->fetchArray();
+                    $data = $db->fetchArray($result);
                     $final_id = ((int) $data['last_id'])+1;
                     
                     $query = "
@@ -1451,7 +1451,7 @@ if($_SERVER['REQUEST_METHOD'] === 'POST')
                         //New
                         $query = "select max(payment_id) as last_id from payment";
                         $result = $db->query($query);
-                        $data = $result->fetchArray();
+                        $data = $db->fetchArray($result);
                         $final_id = ((int) $data['last_id'])+1;
                         
                         $query = "
@@ -1608,7 +1608,7 @@ elseif($_SERVER['REQUEST_METHOD'] === 'GET')
                 ";
                 $last_price = array();
                 $result = $db->query($query);
-                while($row = $result->fetchArray())
+                while($row = $db->fetchArray($result))
                 {
                     $last_price[$row['rm_id']] = $row['price'];    
                 }
@@ -1625,7 +1625,7 @@ elseif($_SERVER['REQUEST_METHOD'] === 'GET')
                         restaurant_menu.rm_name ASC
                 ";
                 $result = $db->query($query);
-                while($row = $result->fetchArray())
+                while($row = $db->fetchArray($result))
                 {
                     $res['data'][] = array(
                         'id' => $row['rm_id'],    
@@ -1676,7 +1676,7 @@ elseif($_SERVER['REQUEST_METHOD'] === 'GET')
                 ";
                 $result = $db->query($query);    
 
-                while($row = $result->fetchArray())
+                while($row = $db->fetchArray($result))
                 {
                     $res['data'][] = array(
                         'id' => $row['id_id'],    

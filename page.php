@@ -93,7 +93,7 @@ elseif($page == 'book')
     //echo "<pre>$query</pre>";
     $result = $db->query($query);    
     
-    while($row = $result->fetchArray())
+    while($row = $db->fetchArray($result))
     {
         if($row['status_id'] == 1)
         {
@@ -245,7 +245,7 @@ elseif($page == 'book_add_edit')
                 book_id = '".$_GET['book_id']."'
         ";
         $result = $db->query($query);    
-        $data = $result->fetchArray();
+        $data = $db->fetchArray($result);
         
         if($data['user_id'] != $ses['user_id'])
         {
@@ -320,7 +320,7 @@ elseif($page == 'book_details')
                 book_id = '".$g_book_id."'
         ";
         $result = $db->query($query);    
-        $data = $result->fetchArray();
+        $data = $db->fetchArray($result);
         
         if($data['user_id'] != $ses['user_id'])
         {
@@ -423,7 +423,7 @@ elseif($page == 'invoice')
                 book_id = '".$g_book_id."'
         ";
         $result = $db->query($query);    
-        $data = $result->fetchArray();
+        $data = $db->fetchArray($result);
         
         if($data['user_id'] != $ses['user_id'])
         {
@@ -497,7 +497,7 @@ elseif($page == 'invoice')
     ";
     $result = $db->query($query);    
     
-    while($row = $result->fetchArray())
+    while($row = $db->fetchArray($result))
     {
         $arr_data['list_invoice'][$row['invoice_date']][$row['invoice_id']]['title'] = 'INV/'.$row['book_id'].'/'.$row['invoice_id'];    
         $arr_data['list_invoice'][$row['invoice_date']][$row['invoice_id']]['restaurant_name'] = $row['restaurant_name'];    
@@ -618,7 +618,7 @@ elseif($page == 'invoice_add_edit')
         ";
         //echo $query;
         $result = $db->query($query) or die('QWUIEHUQWEHIUQWHEUHQWEQWE');
-        $row = $result->fetchArray();
+        $row = $db->fetchArray($result);
         //print_r($row);
         if(! $row)
         {
@@ -662,7 +662,7 @@ elseif($page == 'invoice_add_edit')
                 book_id = '".$g_book_id."'
         ";
         $result = $db->query($query);    
-        $data = $result->fetchArray();
+        $data = $db->fetchArray($result);
         
         if($data['user_id'] != $ses['user_id'])
         {
@@ -681,7 +681,7 @@ elseif($page == 'invoice_add_edit')
                 invoice_id = '".$g_invoice_id."'
         ";
         $result = $db->query($query);    
-        $data_invoice = $result->fetchArray();
+        $data_invoice = $db->fetchArray($result);
         
         //load details
         $query = "
@@ -702,7 +702,7 @@ elseif($page == 'invoice_add_edit')
         $arr_data['list_product_tot']['qty'] = 0;
         $arr_data['list_product_tot']['total'] = 0;
         $no = 0;
-        while($row = $result->fetchArray())
+        while($row = $db->fetchArray($result))
         {
             $no++;
             $arr_data['list_product'][$no]['id_id'] = $row['id_id'];    
@@ -727,7 +727,7 @@ elseif($page == 'invoice_add_edit')
     ";
     $result = $db->query($query);
     $arr_data['list_book'] = array();
-    while($row = $result->fetchArray())
+    while($row = $db->fetchArray($result))
     {
         $arr_data['list_restaurant'][$row['restaurant_id']]['name'] = $row['restaurant_name'];    
     }
@@ -743,7 +743,7 @@ elseif($page == 'invoice_add_edit')
     ";
     $result = $db->query($query);
     $arr_data['list_platform'] = array();
-    while($row = $result->fetchArray())
+    while($row = $db->fetchArray($result))
     {
         $arr_data['list_platform'][$row['platform_id']]['name'] = $row['platform_name'];    
     }
@@ -762,7 +762,7 @@ elseif($page == 'invoice_add_edit')
         ";
         $result = $db->query($query);
         $arr_data['list_rm'] = array();
-        while($row = $result->fetchArray())
+        while($row = $db->fetchArray($result))
         {
             $arr_data['list_rm'][$row['rm_id']]['name'] = $row['rm_name'];    
         }
@@ -1258,7 +1258,7 @@ elseif($page == 'restaurant')
     //echo "<pre>$query</pre>";
     $result = $db->query($query) or die('ERROR|WQIEHQUIWEHUIQWHEUQWE');    
     
-    while($row = $result->fetchArray())
+    while($row = $db->fetchArray($result))
     {
         $arr_data['list_restaurant'][$row['restaurant_id']]['title'] = $row['restaurant_name'];    
     }
@@ -1341,7 +1341,7 @@ elseif($page == 'restaurant_add_edit')
                 restaurant_id = '".$g_restaurant_id."'
         ";
         $result = $db->query($query);    
-        $data = $result->fetchArray();
+        $data = $db->fetchArray($result);
         
         //check boleh dihapus ?
         $query = "
@@ -1353,7 +1353,7 @@ elseif($page == 'restaurant_add_edit')
                 restaurant_id = '".$g_restaurant_id."'
         ";
         $result = $db->query($query);    
-        $row = $result->fetchArray();
+        $row = $db->fetchArray($result);
         $total_rm_check = isset($row['jumlah']) ? $row['jumlah'] : 0;
     }
 ?>
@@ -1418,7 +1418,7 @@ elseif($page == 'restaurant_menu')
                 restaurant_id = '".$g_id."'
         ";
         $result = $db->query($query);    
-        $data = $result->fetchArray();
+        $data = $db->fetchArray($result);
         
     }
     
@@ -1436,7 +1436,7 @@ elseif($page == 'restaurant_menu')
     //echo "<pre>$query</pre>";
     $result = $db->query($query) or die('ERROR|WQIEHQUIWEHUIQWHEUQWE');    
     
-    while($row = $result->fetchArray())
+    while($row = $db->fetchArray($result))
     {
         $arr_data['list'][$row['rm_id']]['name'] = $row['rm_name'];    
     }
@@ -1527,7 +1527,7 @@ elseif($page == 'restaurant_menu_add_edit')
                 restaurant_id = '".$g_restaurant_id."'
         ";
         $result = $db->query($query);    
-        $data = $result->fetchArray();
+        $data = $db->fetchArray($result);
     }
     
     $total_rm_check = 0;
@@ -1543,7 +1543,7 @@ elseif($page == 'restaurant_menu_add_edit')
                 rm_id = '".$g_rm_id."'
         ";
         $result = $db->query($query);    
-        $data_menu = $result->fetchArray();
+        $data_menu = $db->fetchArray($result);
         
         $query = "
             select
@@ -1561,7 +1561,7 @@ elseif($page == 'restaurant_menu_add_edit')
         ";
         $result = $db->query($query) or die('ERROR!|WQUIEHQWUIEHUQWE');
         $rm_tag = '';
-        while($row = $result->fetchArray())
+        while($row = $db->fetchArray($result))
         {
             if($rm_tag != '')
             {
@@ -1580,7 +1580,7 @@ elseif($page == 'restaurant_menu_add_edit')
                 rm_id = '".$g_rm_id."'
         ";
         $result = $db->query($query);    
-        $row = $result->fetchArray();
+        $row = $db->fetchArray($result);
         $total_rm_check = isset($row['jumlah']) ? $row['jumlah'] : 0;
     }
 ?>
@@ -1643,7 +1643,7 @@ elseif($page == 'person')
     //echo "<pre>$query</pre>";
     $result = $db->query($query) or die('ERROR|WQIEHQUIWEHUIQWHEUQWE');    
     
-    while($row = $result->fetchArray())
+    while($row = $db->fetchArray($result))
     {
         $arr_data['list'][$row['person_id']]['name'] = $row['person_name'];    
         $arr_data['list'][$row['person_id']]['initial_name'] = $row['initial_name'];    
@@ -1725,7 +1725,7 @@ elseif($page == 'person_add_edit')
                 person_id = '".$g_id."'
         ";
         $result = $db->query($query);    
-        $data = $result->fetchArray();
+        $data = $db->fetchArray($result);
     }
 ?>
     <div class="container">
@@ -1790,7 +1790,7 @@ elseif($page == 'split_bill')
                 book_id = '".$g_book_id."'
         ";
         $result = $db->query($query);    
-        $data = $result->fetchArray();
+        $data = $db->fetchArray($result);
         
         if($data['user_id'] != $ses['user_id'])
         {
@@ -1847,7 +1847,7 @@ elseif($page == 'split_bill')
     ";
     $result = $db->query($query);    
    
-    while($row = $result->fetchArray())
+    while($row = $db->fetchArray($result))
     {
         $arr_data['list_invoice'][$row['sb_date']][$row['sb_id']]['inv_code'] = 'INV/'.$row['book_id'].'/'.$row['invoice_id'];    
         $arr_data['list_invoice'][$row['sb_date']][$row['sb_id']]['sb_code'] = 'SB/'.$row['book_id'].'/'.$row['invoice_id'].'/'.$row['sb_id'];    
@@ -1975,7 +1975,7 @@ elseif($page == 'split_bill_add_edit')
                 book_id = '".$g_book_id."'
         ";
         $result = $db->query($query);    
-        $data = $result->fetchArray();
+        $data = $db->fetchArray($result);
         
         if($data['user_id'] != $ses['user_id'])
         {
@@ -2013,7 +2013,7 @@ elseif($page == 'split_bill_add_edit')
     ";
     $result = $db->query($query);    
 
-    while($row = $result->fetchArray())
+    while($row = $db->fetchArray($result))
     {
         $arr_data['list_invoice'][$row['invoice_date']][$row['invoice_id']]['title'] = 'INV/'.$row['book_id'].'/'.$row['invoice_id'];    
         $arr_data['list_invoice'][$row['invoice_date']][$row['invoice_id']]['tax_amount'] = $row['tax_amount'];    
@@ -2059,7 +2059,7 @@ elseif($page == 'split_bill_add_edit')
         ";
         $result = $db->query($query);    
 
-        while($row = $result->fetchArray())
+        while($row = $db->fetchArray($result))
         {
             $arr_data['list_invoice_details'][$row['invoice_id']][$row['rm_id']]['name'] = $row['rm_name'];    
             $arr_data['list_invoice_details'][$row['invoice_id']][$row['rm_id']]['qty'] = $row['qty'];    
@@ -2083,7 +2083,7 @@ elseif($page == 'split_bill_add_edit')
         ";
         $result = $db->query($query);
         $arr_data['list_sb_header'] = array();
-        while($row = $result->fetchArray())
+        while($row = $db->fetchArray($result))
         {
             $arr_data['list_sb_header']['invoice_id'] = $row['invoice_id'];  
             $arr_data['list_sb_header']['sb_date'] = $row['sb_date']; 
@@ -2114,7 +2114,7 @@ elseif($page == 'split_bill_add_edit')
         $arr_data['list_sb_header']['other_amount'] = 0;
         $arr_data['list_sb_header']['adjustment_amount'] = 0;
         $arr_data['list_sb_header']['person'] = 0;
-        while($row = $result->fetchArray())
+        while($row = $db->fetchArray($result))
         {
             $no++;
             $arr_data['list_sb_details'][$no]['person_id'] = $row['person_id']*1;  
@@ -2165,7 +2165,7 @@ elseif($page == 'split_bill_add_edit')
     ";
     $result = $db->query($query);
     $arr_data['list_person'] = array();
-    while($row = $result->fetchArray())
+    while($row = $db->fetchArray($result))
     {
         $arr_data['list_person'][$row['person_id']]['name'] = $row['initial_name'].' - '.$row['person_name'];    
     }
@@ -2717,7 +2717,7 @@ elseif($page == 'payment')
                 book_id = '".$g_book_id."'
         ";
         $result = $db->query($query);    
-        $data = $result->fetchArray();
+        $data = $db->fetchArray($result);
         
         if($data['user_id'] != $ses['user_id'])
         {
@@ -2750,7 +2750,7 @@ elseif($page == 'payment')
     //echo "<pre>$query</pre>";
     $result = $db->query($query) or die('ERROR|WQIEHQUIWEHUIQWHEUQWE');    
     
-    while($row = $result->fetchArray())
+    while($row = $db->fetchArray($result))
     {
         $arr_data['list'][$row['payment_date']][$row['payment_id']]['date'] = $row['payment_date'];    
         $arr_data['list'][$row['payment_date']][$row['payment_id']]['payment_type_id'] = $row['payment_type_id'];    
@@ -2880,7 +2880,7 @@ elseif($page == 'payment_delete')
                 book_id = '".$g_book_id."'
         ";
         $result = $db->query($query);    
-        $data = $result->fetchArray();
+        $data = $db->fetchArray($result);
         
         if($data['user_id'] != $ses['user_id'])
         {
@@ -2899,7 +2899,7 @@ elseif($page == 'payment_delete')
                 payment_id = '".$g_payment_id."'
         ";
         $result = $db->query($query);    
-        $data = $result->fetchArray();
+        $data = $db->fetchArray($result);
     }
     
     if(! $data)
@@ -2972,7 +2972,7 @@ elseif($page == 'payment_add_edit')
                 book_id = '".$g_book_id."'
         ";
         $result = $db->query($query);    
-        $data = $result->fetchArray();
+        $data = $db->fetchArray($result);
         
         if($data['user_id'] != $ses['user_id'])
         {
@@ -2991,7 +2991,7 @@ elseif($page == 'payment_add_edit')
                 payment_id = '".$g_payment_id."'
         ";
         $result = $db->query($query);    
-        $data = $result->fetchArray();
+        $data = $db->fetchArray($result);
     }
     
     //load person
@@ -3005,7 +3005,7 @@ elseif($page == 'payment_add_edit')
     ";
     $result = $db->query($query);
     $arr_data['list_person'] = array();
-    while($row = $result->fetchArray())
+    while($row = $db->fetchArray($result))
     {
         $arr_data['list_person'][$row['person_id']]['name'] = $row['initial_name'].' - '.$row['person_name'];    
     }
@@ -3083,7 +3083,7 @@ elseif($page == 'payment_add_bulk')
                 book_id = '".$g_book_id."'
         ";
         $result = $db->query($query);    
-        $data = $result->fetchArray();
+        $data = $db->fetchArray($result);
         
         if($data['user_id'] != $ses['user_id'])
         {
@@ -3103,7 +3103,7 @@ elseif($page == 'payment_add_bulk')
     ";
     $result = $db->query($query);
     $arr_data['list_person'] = array();
-    while($row = $result->fetchArray())
+    while($row = $db->fetchArray($result))
     {
         $arr_data['list_person'][$row['person_id']]['name'] = $row['initial_name'].' - '.$row['person_name'];    
     }
@@ -3224,7 +3224,7 @@ elseif($page == 'summary')
                 book_id = '".$g_book_id."'
         ";
         $result = $db->query($query);    
-        $data = $result->fetchArray();
+        $data = $db->fetchArray($result);
         
         if($data['user_id'] != $ses['user_id'])
         {
@@ -3243,7 +3243,7 @@ elseif($page == 'summary')
     ";
     $result = $db->query($query);
     $arr_data['list_person'] = array();
-    while($row = $result->fetchArray())
+    while($row = $db->fetchArray($result))
     {
         $arr_data['list_person'][$row['person_id']]['name'] = $row['initial_name'].' - '.$row['person_name'];
         $arr_data['list_person'][$row['person_id']]['initial_name'] = $row['initial_name'];
@@ -3265,7 +3265,7 @@ elseif($page == 'summary')
     ";
     $result = $db->query($query);
     $arr_data['list_book'] = array();
-    while($row = $result->fetchArray())
+    while($row = $db->fetchArray($result))
     {
         $arr_data['list_book'][$row['book_id']]['user_id'] = $row['user_id'];
         $arr_data['list_book'][$row['book_id']]['person_id'] = $row['person_id'];
@@ -3551,7 +3551,7 @@ elseif($page == 'summary')
                     ";
                     $result = $db->query($query) or die('error');
                     
-                    while($row = $result->fetchArray())
+                    while($row = $db->fetchArray($result))
                     {
                         $arr_data['data_loop'][$row['person_id']]['data'] = 1;
 
@@ -3584,7 +3584,7 @@ elseif($page == 'summary')
                     $row = array();
                     $result = $db->query($query) or die('error2');
                     //print_r($result);
-                    while($row = $result->fetchArray())
+                    while($row = $db->fetchArray($result))
                     {
                         //print_r($row);
                         //echo '||<hr>';
@@ -3796,7 +3796,7 @@ elseif($page == 'summary')
                     ";                   
                     $result = $db->query($query);
                     
-                    while($row = $result->fetchArray())
+                    while($row = $db->fetchArray($result))
                     {
                         $total_amount = 0;
                         //split_bill_details
@@ -3829,7 +3829,7 @@ elseif($page == 'summary')
                     ";
                     $result = $db->query($query);
                     
-                    while($row = $result->fetchArray())
+                    while($row = $db->fetchArray($result))
                     {
                         if($row['payment_type_id'] == 1)
                         {
@@ -3988,7 +3988,7 @@ elseif($page == 'book_report')
         ";
         //echo $query;
         $result = $db->query($query) or die('QWUIEHUQWEHIUQWHEUHQWEQWE');
-        $row = $result->fetchArray();
+        $row = $db->fetchArray($result);
         //print_r($row);
         if(! $row)
         {
@@ -4059,7 +4059,7 @@ elseif($page == 'book_report')
     
     $arr_data['list_invoice'] = array();
 
-    while($row = $result->fetchArray())
+    while($row = $db->fetchArray($result))
     {
         $arr_data['list_invoice'][$row['invoice_date']][$row['invoice_id']]['title'] = 'INV/'.$row['book_id'].'/'.$row['invoice_id'];    
         $arr_data['list_invoice'][$row['invoice_date']][$row['invoice_id']]['restaurant_name'] = $row['restaurant_name'];    
@@ -4113,7 +4113,7 @@ elseif($page == 'book_report')
     $result = $db->query($query);    
     $arr_data['list_split_bill'] = array();
 
-    while($row = $result->fetchArray())
+    while($row = $db->fetchArray($result))
     {
         $arr_data['list_split_bill'][$row['invoice_id']][$row['sb_id']]['title'] = 'SB/'.$row['book_id'].'/'.$row['invoice_id'].'/'.$row['sb_id'];    
         $arr_data['list_split_bill'][$row['invoice_id']][$row['sb_id']]['total_sb'] = (float) $row['total_sb'];    
@@ -4167,7 +4167,7 @@ elseif($page == 'book_report')
     $arr_data['list_split_bill_per_person'] = array();
     $arr_data['list_split_bill_per_person_sum'] = array();
 
-    while($row = $result->fetchArray())
+    while($row = $db->fetchArray($result))
     {
         $arr_data['list_split_bill_per_person'][$row['sb_id']][$row['person_id']]['total_sb'] = (float) $row['total_sb'];    
         $arr_data['list_split_bill_per_person'][$row['sb_id']][$row['person_id']]['item_amount'] = (float) $row['item_amount'];    
@@ -4219,7 +4219,7 @@ elseif($page == 'book_report')
     $arr_data['list_payment_per_person'] = array();
     $arr_data['list_payment_per_person_details'] = array();
     $result = $db->query($query) or die('error2');
-    while($row = $result->fetchArray())
+    while($row = $db->fetchArray($result))
     {
         if(! isset($arr_data['list_payment_per_person'][$row['person_id']]['amount']))
         {
@@ -4516,7 +4516,7 @@ elseif($page == 'personal_report')
                             initial_name = '".$g_initial."'
                     ";
                     $result = $db->query($query) or die('QWUIEHUQWEHIUQWHEUHQWEQWE');
-                    $row = $result->fetchArray();
+                    $row = $db->fetchArray($result);
                     $target_person_id = (int) $row['person_id'];
                     $result = array();
                     $row = array();
@@ -4574,7 +4574,7 @@ elseif($page == 'personal_report')
         ";
         //echo $query;
         $result = $db->query($query) or die('QWUIEHUQWEHIUQWHEUHQWEQWE');
-        $row = $result->fetchArray();
+        $row = $db->fetchArray($result);
         //print_r($row);
         if(! $row)
         {
@@ -4633,7 +4633,7 @@ elseif($page == 'personal_report')
             initial_name = '".$g_initial."'
     ";
     $result = $db->query($query) or die('QWUIEHUQWEHIUQWHEUHQWEQWE');
-    $row = $result->fetchArray();
+    $row = $db->fetchArray($result);
     
     $db_person_id = isset($row['person_id']) ? (int) $row['person_id'] : 0;        
     $db_person_name = isset($row['person_name']) ? trim($row['person_name']) : '';
@@ -4654,7 +4654,7 @@ elseif($page == 'personal_report')
             initial_name = '".$g_manager_initial."'
     ";
     $result = $db->query($query) or die('QWUIEHUQWEHIUQWHEUHQWEQWE');
-    $row = $result->fetchArray();
+    $row = $db->fetchArray($result);
     
     $db_mgr_person_id = isset($row['person_id']) ? (int) $row['person_id'] : 0;        
     $db_mgr_person_name = isset($row['person_name']) ? trim($row['person_name']) : '';
@@ -4771,7 +4771,7 @@ elseif($page == 'personal_report')
         ";
         //echo "<pre>$query</pre>";
         $result = $db->query($query) or die('QWUIEHUQWEHIUQWHEUHQWEQWE');
-        $row = $result->fetchArray();
+        $row = $db->fetchArray($result);
         
         $beg_balance = (float) $row['total'];
         //echo "|$beg_balance|<br>";
@@ -4816,7 +4816,7 @@ elseif($page == 'personal_report')
     ";
     $result = $db->query($query) or die('error');
     
-    while($row = $result->fetchArray())
+    while($row = $db->fetchArray($result))
     {
         $arr_data['book'][$row['book_id']]['name'] = $row['book_title'];    
         
@@ -4872,7 +4872,7 @@ elseif($page == 'personal_report')
     ";
     $result = $db->query($query) or die('error');
     
-    while($row = $result->fetchArray())
+    while($row = $db->fetchArray($result))
     {
         $arr_data['book'][$row['book_id']]['name'] = $row['book_title'];    
         $arr_data['restaurant'][$row['restaurant_id']]['name'] = $row['restaurant_name'];    
@@ -4915,7 +4915,7 @@ elseif($page == 'personal_report')
     //$result = null;
     //$row = null;
     $result = $db->query($query) or die('error2');
-    while($row = $result->fetchArray())
+    while($row = $db->fetchArray($result))
     {
         $arr_data['book'][$row['book_id']]['name'] = $row['book_title'];
         $arr_data['data'][$row['payment_date']][$row['book_id']]['payment'][$row['payment_type_id']]['amount'] = $row['amount'];    
@@ -4956,7 +4956,7 @@ elseif($page == 'personal_report')
     //$result = null;
     //$row = null;
     $result = $db->query($query) or die('error2');
-    while($row = $result->fetchArray())
+    while($row = $db->fetchArray($result))
     {
         $arr_data['book'][$row['book_id']]['name'] = $row['book_title'];
         
@@ -4998,7 +4998,7 @@ elseif($page == 'personal_report')
     $result = array();
     $row = array();
     $result = $db->query($query) or die('error');
-    $row = $result->fetchArray();
+    $row = $db->fetchArray($result);
       
     $total_total += (float) $row['item_amount'];    
     $total_total += (float) $row['tax_amount'];    
@@ -5037,7 +5037,7 @@ elseif($page == 'personal_report')
     //$result = null;
     //$row = null;
     $result = $db->query($query) or die('error2');
-    while($row = $result->fetchArray())
+    while($row = $db->fetchArray($result))
     {
         if($row['payment_type_id'] == 1)
         {
@@ -5087,7 +5087,7 @@ elseif($page == 'personal_report')
     $row = array();
     $result = $db->query($query) or die('error');
     $arr_data['book_list'] = array();
-    while($row = $result->fetchArray())
+    while($row = $db->fetchArray($result))
     {
         $arr_data['book_list'][$row['book_id']]['name'] = $row['book_title'];
     }
@@ -5132,7 +5132,7 @@ elseif($page == 'personal_report')
     $row = array();
     $result = $db->query($query) or die('WQEUIHQWIUEHUIWQEHQWE');
     $arr_data['resto_list'] = array();
-    while($row = $result->fetchArray())
+    while($row = $db->fetchArray($result))
     {
         $arr_data['resto_list'][$row['restaurant_id']]['amount'] = $row['amount'];
         $arr_data['resto_list'][$row['restaurant_id']]['name'] = $row['restaurant_name'];
@@ -5471,7 +5471,7 @@ elseif($page == 'prediction_board')
                 book_id = '".$g_book_id."'
         ";
         $result = $db->query($query);    
-        $data = $result->fetchArray();
+        $data = $db->fetchArray($result);
         
         if($data['user_id'] != $ses['user_id'])
         {
@@ -5534,10 +5534,10 @@ elseif($page == 'prediction_board')
         and res_ref.price = split_bill_details.item_amount
     ";
     $result = $db->query($query);
-    //$data = $result->fetchArray(); 
+    //$data = $db->fetchArray($result); 
     //print('<pre>'.print_r($data,true).'</pre>');
     $data_person_item = array();
-    while($row = $result->fetchArray())
+    while($row = $db->fetchArray($result))
     {
         $day = date('D',$row['sb_date']);
         $arr_data['rm_list'][$row['rm_id']]['name'] = $row['rm_name'];
