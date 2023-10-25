@@ -18,7 +18,7 @@ if($_SERVER['REQUEST_METHOD'] === 'POST')
             
             if($_SESSION['mess'] == '')
             {
-                $query = "select user.*,person.initial_name from user inner join person on person.person_id = user.person_id where username = '".$username."'";
+                $query = "select user.*,person.initial_name from user left join person on person.person_id = user.person_id where username = '".$username."'";
                 $result = $db->query($query);
                 $data = $db->fetchArray($result);
                 

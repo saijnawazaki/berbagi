@@ -43,5 +43,23 @@ class Databasu
             return $result->fetch_array();
         }
                 
+    }
+    
+    public function numRows($result)
+    {
+        if(DB_CONNECTOR == 'sqlite')
+        {
+            $num = 0;
+            while($row = $this->fetchArray($result))
+            {
+                $num++;    
+            }    
+            
+            return $num;
+        }              
+        else
+        {
+            return $result->num_rows;    
+        } 
     }   
 }

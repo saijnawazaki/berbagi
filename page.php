@@ -10,7 +10,7 @@ if($page == 'fatal_error')
 <?php    
 }
 elseif($page == 'login')
-{
+{   
 ?>
     <div class="container">
         <form method="post" action="<?=APP_URL?>?page=login" accept-charset="utf-8">
@@ -92,7 +92,7 @@ elseif($page == 'book')
     ";
     //echo "<pre>$query</pre>";
     $result = $db->query($query);    
-    
+
     while($row = $db->fetchArray($result))
     {
         if($row['status_id'] == 1)
@@ -471,8 +471,7 @@ elseif($page == 'invoice')
         (
             select
                 split_bill.invoice_id,
-                SUM
-                (
+                SUM(
                     split_bill_details.item_amount
                     + split_bill_details.tax_amount 
                     - split_bill_details.discount_amount 
@@ -1825,8 +1824,7 @@ elseif($page == 'split_bill')
         (
             select
                 split_bill_details.sb_id,
-                SUM
-                (
+                SUM(
                     split_bill_details.item_amount
                     + split_bill_details.tax_amount 
                     - split_bill_details.discount_amount 
