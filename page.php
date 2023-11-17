@@ -3122,7 +3122,7 @@ elseif($page == 'payment_add_bulk')
         <hr>
         <div class="row">
             <div class="col-12 col-lg-4">
-                <form method="post" action="<?=APP_URL?>?page=payment_add_edit" accept-charset="utf-8">
+                <form method="post" action="<?=APP_URL?>?page=payment_add_bulk" accept-charset="utf-8">
                     <label>Payment Date</label>
                     <input type="date" name="payment_date" value="<?=date('Y-m-d')?>">
                     <label>Payment Type</label>
